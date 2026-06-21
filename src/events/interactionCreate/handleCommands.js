@@ -1,6 +1,12 @@
+const { Client } = require("discord.js");
+
 const { devs, testServer } = require("../../../config.json");
 const getLocalCommands = require("../../utils/getLocalCommands");
 
+/**
+ * @param {Client} client
+ * @param {import("discord.js").Interaction} interaction
+ * */
 module.exports = async (client, interaction) => {
 	if (!interaction.isChatInputCommand()) return;
 
@@ -14,7 +20,7 @@ module.exports = async (client, interaction) => {
 		if (!commandObject) return;
 
 		if (commandObject.devOnly) {
-			if (!devs.includes(interaction.member.id)) {
+			if (!devs.includes(interaction.member.user.id)) {
 				interaction.reply({
 					content: "Only developers can run this command",
 					ephemeral: true,

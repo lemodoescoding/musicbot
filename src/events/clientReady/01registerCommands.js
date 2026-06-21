@@ -2,15 +2,16 @@
 
 const { testServer } = require('../../../config.json')
 
-const { REST, Routes, ApplicationCommandOptionType } = require('discord.js')
+const { REST, Routes, ApplicationCommandOptionType, Client } = require('discord.js')
 const getLocalCommands = require('../../utils/getLocalCommands')
 const getApplicationCommands = require('../../utils/getApplicationCommands')
 const areCommandsDifferent = require('../../utils/areCommandsDifferent')
 
 
+/**
+ * @param {Client} client
+ * */
 module.exports = async (client) => {
-    const localCommands = getLocalCommands();
-    
     try {
         const localCommands = getLocalCommands();
         const applicationCommands = await getApplicationCommands(client, testServer)
@@ -19,6 +20,9 @@ module.exports = async (client) => {
             const { name, description, options } = localCommand;
 
             const existingCommand = await applicationCommands.cache.find(
+                /**
+                 * @param {*} cmd
+                 * */
                 (cmd) => cmd.name === name
             )
 

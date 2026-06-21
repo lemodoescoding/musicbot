@@ -1,4 +1,4 @@
-const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js')
+const { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js')
 
 module.exports = {
     name: 'kick',
@@ -25,20 +25,25 @@ module.exports = {
         PermissionFlagsBits.KickMembers
     ],
     /** 
-     * @param {Client} client
-     * @param {Interaction} interaction 
+     * @param {Client} _client
+     * @param {ChatInputCommandInteraction} interaction 
      * */
-    callback: async (client, interaction) => {
-        const targetUserId = interaction.options.get('target-user').value;
-        const reason = interaction.options.get('reason')?.value || "No reason provided.";
-
-        await interaction.deferReply();
-        const targetUser = await interaction.guild.members.fetch(targetUserId)
+    callback: async (_client, interaction) => {
+        const targetUserOption = interaction.options.get('target-user');
+        if(!targetUserOption) return;
+        
+        const targetUserId = targetUserOption.value;
 
         if(!targetUserId) {
             await interaction.editReply("That user doesnt exist in this server");
             return;
         }
+
+        const reason = interaction.options.get('reason')?.value || "No reason provided.";
+
+        await interaction.deferReply();
+        const targetUser = await interaction.guild.members.fetch(String(targetUserId))
+
 
         if(targetUserId === interaction.guild.ownerId) {
             await interaction.editReply("You can't kick that user because they're the server owner");
@@ -46,7 +51,8 @@ module.exports = {
         }
 
         const targetUserRolePosition = targetUser.roles.highest.position;
-        const requestUserRolePosition = interaction.member.roles.highest.position;
+        const requestMember = await interaction.guild.members.fetch(interaction.user.id);
+        const requestUserRolePosition = requestMember.roles.highest.position;
         const botRolePosition = interaction.guild.members.me.roles.highest.position;
 
         if (targetUserRolePosition >= requestUserRolePosition) {
@@ -60,7 +66,7 @@ module.exports = {
         }
 
         try {
-            await targetUser.kick({ reason })
+            await targetUser.kick(String(reason))
             await interaction.editReply(`User ${targetUser} was kicked\n Reason: ${reason}`)
         } catch (error) {
             console.log(`There was an error when kicking: ${error}`)

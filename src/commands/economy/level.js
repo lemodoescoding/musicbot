@@ -1,16 +1,11 @@
 const {
 	ApplicationCommandOptionType,
 	Client,
-	Interaction,
+    ChatInputCommandInteraction,
 	AttachmentBuilder,
 } = require("discord.js");
 
-const canvacord = require("canvacord");
-
-const fs = require("fs");
-
 const Level = require("../../models/Level");
-const calculateLevelXP = require("../../utils/calculateLevelXP.js");
 const generateRankCard = require("../../utils/generateRankCard.js");
 
 module.exports = {
@@ -24,11 +19,11 @@ module.exports = {
 		},
 	],
 	/**
-	 * @param {Client} client
-	 * @param {Interaction} interaction
+	 * @param {Client} _client
+	 * @param {ChatInputCommandInteraction} interaction
 	 * */
-	callback: async (client, interaction) => {
-		if (!interaction.inGuild()) {
+	callback: async (_client, interaction) => {
+		if (!interaction.guildId) {
 			interaction.reply("You can only run this command inside a server.");
 			return;
 		}
@@ -38,13 +33,13 @@ module.exports = {
 		try {
 			const mentionedUserId =
 				interaction.options.get("target-user")?.value;
-			const targetUserId = mentionedUserId || interaction.member.id;
+			const targetUserId = mentionedUserId || interaction.member.user.id;
 
 			const targetUserObject =
-				await interaction.guild.members.fetch(targetUserId);
+				await interaction.guild.members.fetch(String(targetUserId));
 
 			const fetchedLevel = await Level.findOne({
-				userId: targetUserId,
+				userId: String(targetUserId),
 				guildId: interaction.guild.id,
 			});
 
@@ -100,6 +95,8 @@ module.exports = {
 
 			const attachment = new AttachmentBuilder(image, { name: "rank.png" });
 
+
+            interaction
 			interaction.editReply({ files: [attachment] });
 
 		} catch (error) {

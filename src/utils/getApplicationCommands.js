@@ -1,3 +1,9 @@
+const { Client } = require('discord.js')
+
+/**
+ * @param {Client} client
+ * @param {String} guildId
+ * */
 module.exports = async (client, guildId) => {
     let applicationCommands;
 
@@ -6,10 +12,10 @@ module.exports = async (client, guildId) => {
 
         applicationCommands = guild.commands;
     } else {
-        applicationCommands = await client.application.commands;
+        applicationCommands = client.application.commands;
     }
 
-    await applicationCommands.fetch()
+    await applicationCommands.fetch({})
 
     return applicationCommands;
 }

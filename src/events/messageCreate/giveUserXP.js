@@ -3,6 +3,10 @@ const { Client, Message } = require('discord.js')
 const Level = require('../../models/Level');
 const calculateLevelXP = require('../../utils/calculateLevelXP');
 
+/**
+ * @param {Number} min
+ * @param {Number} max
+ * */
 function getRandomXP(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
@@ -10,10 +14,10 @@ function getRandomXP(min, max) {
 }
 
 /**
- * @param {Client} client
+ * @param {Client} _client
  * @param {Message} message
  * */
-module.exports = async (client, message) => {
+module.exports = async (_client, message) => {
     if(!message.inGuild() || message.author.bot) return;
 
     const xpToGive = getRandomXP(5, 15);

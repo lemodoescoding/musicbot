@@ -1,6 +1,9 @@
 const fs = require('fs')
 const path = require('path')
 
+/**
+ * @param {String} directory
+ * */
 module.exports = (directory, folderOnly = false) => {
     let filenames = [];
 

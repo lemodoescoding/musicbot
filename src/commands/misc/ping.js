@@ -1,3 +1,5 @@
+const {Client, ChatInputCommandInteraction} = require('discord.js')
+
 module.exports = {
     name: 'ping',
     description: 'Pong!',
@@ -5,6 +7,10 @@ module.exports = {
     // testOnly: Boolean,
     // options: Object[],
     // deleted: Boolean,
+    /**
+     * @param {Client} client
+     * @param {ChatInputCommandInteraction} interaction
+     * */
     callback: async (client, interaction) => {
         await interaction.deferReply();
 

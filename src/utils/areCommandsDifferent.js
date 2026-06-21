@@ -1,4 +1,14 @@
+const { ApplicationCommand } = require("discord.js");
+
+/**
+ * @param {ApplicationCommand} existingCommand
+ * @param {ApplicationCommand} localCommand
+ * */
 module.exports = (existingCommand, localCommand) => {
+	/**
+	 * @param {{ name: string, value: string | number }[]} existingChoices
+	 * @param {{ name: string, value: string | number }[]} localChoices
+	 */
 	const areChoicesDifferent = (existingChoices, localChoices) => {
 		for (const localChoice of localChoices) {
 			const existingChoice = existingChoices?.find(
@@ -16,6 +26,10 @@ module.exports = (existingCommand, localCommand) => {
 		return false;
 	};
 
+    /**
+     * @param {{ name: string, description: string, type: number, required?: boolean, choices?: any[] }[]} existingOptions
+     * @param {{ name: string, description: string, type: number, required?: boolean, choices?: any[] }[]} localOptions
+     */
 	const areOptionsDifferent = (existingOptions, localOptions) => {
 		for (const localOption of localOptions) {
 			const existingOption = existingOptions?.find(

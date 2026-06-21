@@ -1,4 +1,4 @@
-const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js')
+const { Client, ApplicationCommandOptionType, PermissionFlagsBits, ChatInputCommandInteraction } = require('discord.js')
 
 module.exports = {
     name: 'ban',
@@ -25,20 +25,24 @@ module.exports = {
         PermissionFlagsBits.BanMembers
     ],
     /** 
-     * @param {Client} client
-     * @param {Interaction} interaction 
+     * @param {Client} _client
+     * @param {ChatInputCommandInteraction} interaction 
      * */
-    callback: async (client, interaction) => {
-        const targetUserId = interaction.options.get('target-user').value;
+    callback: async (_client, interaction) => {
+        const targetUserOption = interaction.options.get('target-user');
+        if(!targetUserOption) return;
+        
+        const targetUserId = targetUserOption.value;
         const reason = interaction.options.get('reason')?.value || "No reason provided.";
-
-        await interaction.deferReply();
-        const targetUser = await interaction.guild.members.fetch(targetUserId)
 
         if(!targetUserId) {
             await interaction.editReply("That user doesnt exist in this server");
             return;
         }
+
+        await interaction.deferReply();
+        const targetUser = await interaction.guild.members.fetch(String(targetUserId))
+
 
         if(targetUserId === interaction.guild.ownerId) {
             await interaction.editReply("You can't ban that user because they're the server owner");
@@ -46,7 +50,8 @@ module.exports = {
         }
 
         const targetUserRolePosition = targetUser.roles.highest.position;
-        const requestUserRolePosition = interaction.member.roles.highest.position;
+        const requestMember = await interaction.guild.members.fetch(interaction.user.id);
+        const requestUserRolePosition = requestMember.roles.highest.position;
         const botRolePosition = interaction.guild.members.me.roles.highest.position;
 
         if (targetUserRolePosition >= requestUserRolePosition) {
@@ -59,8 +64,10 @@ module.exports = {
             return;
         }
 
+
+
         try {
-            await targetUser.ban({ reason })
+            await targetUser.ban({ reason: String(reason) })
             await interaction.editReply(`User ${targetUser} was banned\n Reason: ${reason}`)
         } catch (error) {
             console.log(`There was an error when banning: ${error}`)
