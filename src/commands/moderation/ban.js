@@ -1,4 +1,4 @@
-const { Client, ApplicationCommandOptionType, PermissionFlagsBits, ChatInputCommandInteraction } = require('discord.js')
+const { Client, ApplicationCommandOptionType, PermissionFlagsBits, ChatInputCommandInteraction, MessageFlags } = require('discord.js')
 
 module.exports = {
     name: 'ban',
@@ -31,7 +31,7 @@ module.exports = {
     callback: async (_client, interaction) => {
         const targetUserOption = interaction.options.get('target-user');
         if(!targetUserOption) return;
-        
+
         const targetUserId = targetUserOption.value;
         const reason = interaction.options.get('reason')?.value || "No reason provided.";
 
@@ -44,8 +44,13 @@ module.exports = {
         const targetUser = await interaction.guild.members.fetch(String(targetUserId))
 
 
-        if(targetUserId === interaction.guild.ownerId) {
+        if(targetUser.id === interaction.guild.ownerId) {
             await interaction.editReply("You can't ban that user because they're the server owner");
+            return;
+        }
+
+        if(targetUser.id === interaction.member.id) {
+            await interaction.editReply("You can't ban yourself.");
             return;
         }
 

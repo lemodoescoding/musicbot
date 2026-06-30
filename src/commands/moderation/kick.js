@@ -1,4 +1,4 @@
-const { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js')
+const { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, PermissionFlagsBits, MessageFlags } = require('discord.js')
 
 module.exports = {
     name: 'kick',
@@ -31,7 +31,7 @@ module.exports = {
     callback: async (_client, interaction) => {
         const targetUserOption = interaction.options.get('target-user');
         if(!targetUserOption) return;
-        
+
         const targetUserId = targetUserOption.value;
 
         if(!targetUserId) {
@@ -45,8 +45,13 @@ module.exports = {
         const targetUser = await interaction.guild.members.fetch(String(targetUserId))
 
 
-        if(targetUserId === interaction.guild.ownerId) {
+        if(targetUser.id === interaction.guild.ownerId) {
             await interaction.editReply("You can't kick that user because they're the server owner");
+            return;
+        }
+
+        if(targetUser.id === interaction.member.id) {
+            await interaction.editReply("You can't kick yourself.");
             return;
         }
 

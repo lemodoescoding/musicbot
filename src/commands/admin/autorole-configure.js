@@ -1,4 +1,4 @@
-const { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js')
+const { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, PermissionFlagsBits, MessageFlags } = require('discord.js')
 const AutoRole = require('../../models/AutoRole');
 
 module.exports = {
@@ -20,7 +20,10 @@ module.exports = {
      * */
     callback: async (client, interaction) => {
         if(!interaction.guildId) {
-            interaction.reply("You can only run this command inside a server.");
+            await interaction.reply({
+                content: 'You can only run this command inside a server',
+                flags: [ MessageFlags.Ephemeral ]
+            })
             return;
         }
 

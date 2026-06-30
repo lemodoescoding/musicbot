@@ -15,7 +15,17 @@ GlobalFonts.registerFromPath(
 	"Roboto",
 );
 
-const { Client, IntentsBitField } = require("discord.js");
+process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception:");
+    console.error(err);
+});
+
+process.on("unhandledRejection", (reason) => {
+    console.error("Unhandled Rejection:");
+    console.error(reason);
+});
+
+const { Client, IntentsBitField, Partials } = require("discord.js");
 const eventHandler = require("./handlers/eventHandler");
 
 const client = new Client({
@@ -26,6 +36,10 @@ const client = new Client({
 		IntentsBitField.Flags.GuildPresences,
 		IntentsBitField.Flags.MessageContent,
 	],
+    partials: [
+        Partials.GuildMember,
+        Partials.User
+    ]
 });
 
 // client.on("clientReady", (c) => {

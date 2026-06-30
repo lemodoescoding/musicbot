@@ -26,10 +26,10 @@ module.exports = (existingCommand, localCommand) => {
 		return false;
 	};
 
-    /**
-     * @param {{ name: string, description: string, type: number, required?: boolean, choices?: any[] }[]} existingOptions
-     * @param {{ name: string, description: string, type: number, required?: boolean, choices?: any[] }[]} localOptions
-     */
+	/**
+	 * @param {{ name: string, description: string, type: number, required?: boolean, choices?: any[] }[]} existingOptions
+	 * @param {{ name: string, description: string, type: number, required?: boolean, choices?: any[] }[]} localOptions
+	 */
 	const areOptionsDifferent = (existingOptions, localOptions) => {
 		for (const localOption of localOptions) {
 			const existingOption = existingOptions?.find(
@@ -57,13 +57,22 @@ module.exports = (existingCommand, localCommand) => {
 		return false;
 	};
 
-	if (
-		existingCommand.description !== localCommand.description ||
-		existingCommand.options?.length !==
-			(localCommand.options?.length || 0) ||
-		areOptionsDifferent(existingCommand.options, localCommand.options || [])
-	) {
+	if ((existingCommand.type ?? 1) !== (localCommand.type ?? 1)) {
 		return true;
+	}
+
+	if (localCommand.type === undefined) {
+		if (
+			existingCommand.description !== localCommand.description ||
+			existingCommand.options?.length !==
+				(localCommand.options?.length || 0) ||
+			areOptionsDifferent(
+				existingCommand.options,
+				localCommand.options || [],
+			)
+		) {
+			return true;
+		}
 	}
 
 	return false;

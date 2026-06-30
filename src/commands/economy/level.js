@@ -3,6 +3,7 @@ const {
 	Client,
     ChatInputCommandInteraction,
 	AttachmentBuilder,
+    MessageFlags
 } = require("discord.js");
 
 const Level = require("../../models/Level");
@@ -24,7 +25,10 @@ module.exports = {
 	 * */
 	callback: async (_client, interaction) => {
 		if (!interaction.guildId) {
-			interaction.reply("You can only run this command inside a server.");
+            await interaction.reply({
+                content: 'You can only run this command inside a server',
+                flags: [ MessageFlags.Ephemeral ]
+            })
 			return;
 		}
 

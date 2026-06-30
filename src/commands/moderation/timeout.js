@@ -1,4 +1,4 @@
-const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits } = require("discord.js");
+const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const ms = require('ms')
 
 module.exports = {
@@ -40,6 +40,16 @@ module.exports = {
         const targetUser = await interaction.guild.members.fetch(mentionable);
         if (!targetUser) {
             await interaction.editReply("That user doesnt exist in this server.");
+            return;
+        }
+
+        if(targetUser.id === interaction.member.id) {
+            await interaction.editReply("You can't timeout yourself.");
+            return;
+        }
+
+        if(targetUser.id === interaction.guild.ownerId) {
+            await interaction.editReply("You can't timeout the server owner.");
             return;
         }
 
