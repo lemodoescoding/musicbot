@@ -1,4 +1,4 @@
-const { ChatInputCommandInteraction } = require("discord.js");
+const { ChatInputCommandInteraction, MessageFlags } = require("discord.js");
 
 const validateVoice = require("../../utils/music/validateVoice");
 
@@ -36,7 +36,8 @@ module.exports = {
 
         } catch(error) {
             await interaction.reply({
-                content: `There was an error on running command /pause\n\`${error.message}\``
+                content: `There was an error on running command /pause\n\`${error.message}\``,
+                flags: [MessageFlags.Ephemeral]
             });
 
             console.log(error);

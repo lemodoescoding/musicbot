@@ -7,6 +7,6 @@ const { Queue, Song } = require('distube')
  * */
 module.exports = (queue, song) => {
     queue.textChannel?.send({
-        embeds: [buildNowPlayingEmbed(song)]
+        embeds: [buildNowPlayingEmbed(song, queue)]
     });
 }

@@ -1,4 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
+const formatDuration = require("../music/formatDuration");
 
 /**
  * formats a DisTube queue into a paginated-safe embed.
@@ -44,18 +45,6 @@ function formatQueueEmbed(queue, { maxSongs = 10, color = "Purple" } = {}) {
 	}
 
 	return embed;
-}
-
-/**
- * converts seconds into H:MM:SS or M:SS format.
- * @param {number} seconds
- * @returns {string}
- */
-function formatDuration(seconds) {
-	const h = Math.floor(seconds / 3600);
-	const m = Math.floor((seconds % 3600) / 60);
-	const s = Math.floor(seconds % 60).toString().padStart(2, "0");
-	return h > 0 ? `${h}:${m.toString().padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
 module.exports = formatQueueEmbed;
