@@ -1,6 +1,6 @@
 const { DisTube } = require("distube");
 const { Client } = require("discord.js");
-const { YouTubePlugin } = require("@distube/youtube");
+const { YtDlpPlugin } = require("@distube/yt-dlp");
 
 const getAllFiles = require("../utils/getAllFiles");
 const path = require("path");
@@ -11,13 +11,19 @@ const path = require("path");
  * }} client
  * */
 module.exports = (client) => {
+    console.log("[DEBUG] HOME:", process.env.HOME);
+
 	client.distube = new DisTube(client, {
-		plugins: [new YouTubePlugin()],
+		plugins: [
+			new YtDlpPlugin({
+				update: true,
+			}),
+		],
 		emitNewSongOnly: true,
 	});
 
-	client.distube.on("debug", console.log);
-	client.distube.on("ffmpegDebug", console.log);
+	// client.distube.on("debug", console.log);
+	// client.distube.on("ffmpegDebug", console.log);
 
 	const eventFiles = getAllFiles(
 		path.join(__dirname, "..", "events", "distube"),
