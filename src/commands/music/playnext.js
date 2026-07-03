@@ -1,7 +1,7 @@
 const { ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags } = require("discord.js");
 const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
-const getYtIClient = require("../../utils/music/getYtIClient");
+const { getYtIClient } = require("../../utils/music/getYtIClient");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 const { Queue } = require("distube");
 
@@ -33,7 +33,7 @@ module.exports = {
 
 		const urlRegex = /^https?:\/\//i.test(query);
 
-		await interaction.deferReply();
+        await interaction.deferReply();
 
         try {
 			let input = query;
@@ -55,7 +55,6 @@ module.exports = {
 				if (!top?.id) {
                     await interaction.editReply({
                         content: `No results can be found for: ${query}`,
-                        flags: [MessageFlags.Ephemeral]
                     })
 
                     return;
@@ -85,10 +84,13 @@ module.exports = {
                 embeds: [makeEmbed({ description: `⏭️ [**${song.name}**](${song.url}) will play next.` })]
             });
 		} catch (error) {
-			await interaction.editReply({
-				content: `Failed to play music.\n\`${error.message}\`\n${error.stack}`,
+            await interaction.deleteReply().catch(() => {})
+			await interaction.followUp({
+				content: `Failed to play music.\n\`${error.message}\``,
                 flags: [MessageFlags.Ephemeral]
 			});
+
+            console.log(error);
 		}
     }
 }

@@ -17,16 +17,10 @@ module.exports = async (queue, song) => {
 		queue._npMessage?.id ?? "none",
 	);
 
-	if (queue._npMessage?.editable) {
+	if (queue._npMessage?.deletable) {
 		try {
-			await queue._npMessage.edit({ embeds: [embed] });
-			console.log(
-				"[playSong] edited existing message:",
-				queue._npMessage.id,
-			);
-			return;
+			await queue._npMessage.delete().catch(() => {});
 		} catch (error) {
-			console.log("[playSong] edit failed, sending new:", err.message);
 			// pass
 		}
 	}

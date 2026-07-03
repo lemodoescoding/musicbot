@@ -3,6 +3,9 @@ const { Innertube } = require("youtubei.js");
 let ytiClient = null;
 let initPromise = null;
 
+/**
+ * @returns {Innertube}
+ * */
 async function getYtIClient() {
     if (ytiClient) return ytiClient;
     if (!initPromise) {

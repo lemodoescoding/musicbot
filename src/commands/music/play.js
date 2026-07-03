@@ -1,4 +1,5 @@
 const { Queue } = require("distube");
+const { Innertube } = require("youtubei.js");
 
 const getQueue = require("../../utils/music/getQueue");
 
@@ -48,6 +49,10 @@ module.exports = {
 			let input = query;
 
 			if (!urlRegex) {
+
+                /**
+                 * @type {Innertube}
+                 * */
 				const yt = await getYtIClient();
 
 				// https://github.com/LuanRT/YouTube.js/blob/main/docs/api/classes/Innertube.md
