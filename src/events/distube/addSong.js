@@ -17,7 +17,7 @@ module.exports = (queue, song) => {
         thumbnail: song.thumbnail,
     }).addFields(
         {name: "Duration", value: song.duration ? formatDuration(song.duration) : "LIVE", inline: true},
-        {name: "Position", value: `#${position + 1}`, inline: true},
+        {name: "Position", value: `#${position}`, inline: true},
         {name: "Requested by", value: `${song.user}`, inline: true}
     )
     queue.textChannel?.send({

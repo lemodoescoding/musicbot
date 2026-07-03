@@ -57,7 +57,12 @@ module.exports = {
 				const top = await search.results?.[0];
 
 				if (!top?.id) {
-					throw new Error(`No results can be found for: ${query}`);
+                    await interaction.editReply({
+                        content: `No results can be found for: ${query}`,
+                        flags: [MessageFlags.Ephemeral]
+                    })
+
+                    return;
 				}
 
 				input = `https://www.youtube.com/watch?v=${top.id}`;
@@ -95,6 +100,7 @@ module.exports = {
 		} catch (error) {
 			await interaction.editReply({
 				content: `Failed to play music.\n\`${error.message}\`\n${error.stack}`,
+                flags: [MessageFlags.Ephemeral]
 			});
 		}
 	},
