@@ -36,6 +36,7 @@ module.exports = async (client) => {
 			testServer,
 		);
 
+
 		for (const localCommand of localCommands) {
 			const { name, description, options } = localCommand;
 
@@ -93,8 +94,8 @@ module.exports = async (client) => {
 				console.log(`[DISCORD BOT] Registered command "${name}".`);
 			}
 		}
+
 	} catch (error) {
 		console.log(`There was an error: ${error}`);
 	}
-	// console.log(localCommands)
 };

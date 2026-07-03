@@ -1,10 +1,13 @@
-const { Client } = require('discord.js')
+const { Client, ApplicationCommandManager } = require('discord.js')
 
 /**
  * @param {Client} client
  * @param {String} guildId
  * */
 module.exports = async (client, guildId) => {
+    /**
+     * @type {ApplicationCommandManager}
+     * */
     let applicationCommands;
 
     if (guildId) {

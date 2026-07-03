@@ -1,4 +1,5 @@
 const { Queue } = require("distube")
+const { MessageFlags } = require("discord.js");
 
 /**
  * @param {Queue} queue
@@ -7,5 +8,8 @@ const { Queue } = require("distube")
 module.exports = (queue, error) => {
     console.error(error);
 
-    queue?.textChannel?.send(`❌ ${error.message}`);
+    queue?.textChannel?.send({
+        content: `There was an error, report this to admin.\n❌ ${error.message}`,
+        flags: [MessageFlags.Ephemeral]
+    })
 }
