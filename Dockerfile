@@ -28,7 +28,11 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 
 RUN mkdir -p /etc && echo '--remote-components ejs:github --cookies /app/cookies/youtube_cookies.txt' > /etc/yt-dlp.conf
 
+ENV YTDLP_DISABLE_DOWNLOAD=true
+
 COPY --from=builder /app/node_modules ./node_modules
+RUN rm -rf /app/node_modules/@distube/yt-dlp/bin
+
 COPY . .
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
