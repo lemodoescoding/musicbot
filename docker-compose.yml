@@ -5,7 +5,4 @@ services:
     env_file:
       - .env
     volumes:
-      - ./cookies:/app/cookies
-
-volumes:
-  cookies-data:
+      - ./cookies/master_cookies.txt:/app/cookies/master_cookies.txt:ro
