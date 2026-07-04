@@ -26,7 +26,7 @@ ENV PATH="/usr/local/bin:${PATH}"
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
 
-RUN mkdir -p /etc && echo '--remote-components ejs:github' > /etc/yt-dlp.conf
+RUN mkdir -p /etc && echo '--remote-components ejs:github --cookies /app/cookies/youtube_cookies.txt' > /etc/yt-dlp.conf
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
