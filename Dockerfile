@@ -1,0 +1,45 @@
+FROM node:22.23-bookworm-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+COPY patches ./patches
+RUN npm ci
+
+COPY . .
+
+FROM node:22.23-bookworm-slim 
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg curl ca-certificates unzip python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
+ENV PATH="/usr/local/bin:${PATH}"
+
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp
+
+RUN mkdir -p /etc && echo '--remote-components ejs:github' > /etc/yt-dlp.conf
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY . .
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+RUN useradd app
+RUN chown -R app:app /app
+
+RUN chown app:app /usr/local/bin/yt-dlp
+
+USER app
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["node", "src/index.js"]

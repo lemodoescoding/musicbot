@@ -64,7 +64,7 @@ module.exports = {
 			const yt = await getYtIClient();
 			const search = await yt.search(input, { type: "video" });
             let results = search.results.filter((s) => {
-                return s.title.text !== undefined && s.type === "Video" && s.id !== undefined
+                return s.title?.text !== undefined && s.type === "Video" && s.id !== undefined
             });
 
 			results = (results || []).slice(0, MAX_LIST_EMBED);
