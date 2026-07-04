@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
+ENV YTDLP_DISABLE_DOWNLOAD=true
+
 COPY package*.json ./
 COPY patches ./patches
 RUN npm ci

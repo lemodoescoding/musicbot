@@ -16,7 +16,7 @@ module.exports = (client) => {
 	client.distube = new DisTube(client, {
 		plugins: [
 			new YtDlpPlugin({
-				update: true,
+				update: false,
 			}),
 		],
 		emitNewSongOnly: true,
