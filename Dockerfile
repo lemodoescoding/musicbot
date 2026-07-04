@@ -44,6 +44,8 @@ RUN useradd app
 RUN chown -R app:app /app
 
 RUN chown app:app /usr/local/bin/yt-dlp
+# for ytdlp signature function
+RUN mkdir -p /home/app/.cache && chown -R app:app /home/app
 
 USER app
 
