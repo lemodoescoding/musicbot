@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-const mongoose = require("mongoose");
 const path = require("path");
 
 const { Font, FontFactory } = require("canvacord");
@@ -42,41 +41,33 @@ const client = new Client({
 });
 
 (async () => {
-	try {
-		mongoose.set("strictQuery", false);
-		await mongoose.connect(process.env.MONGODB_URI);
-
-		console.log("Connected to MongoDB!");
-	} catch (error) {
-		console.log(error);
-	}
 
 	eventHandler(client);
 
 	distubeHandler(client);
 
-	// client.on("voiceStateUpdate", (oldState, newState) => {
-	// 	if (newState.id === client.user?.id) {
-	// 		console.log("VOICE STATE UPDATE");
-	// 		console.log({
-	// 			channel: newState.channel?.name,
-	// 			sessionId: newState.sessionId,
-	// 		});
-	// 	}
-	// });
-	//
-	// client.ws.on("VOICE_SERVER_UPDATE", (data) => {
-	// 	console.log("VOICE SERVER UPDATE", data);
-	// });
-	//
-	// client.on("raw", (packet) => {
-	// 	if (
-	// 		packet.t === "VOICE_STATE_UPDATE" ||
-	// 		packet.t === "VOICE_SERVER_UPDATE"
-	// 	) {
-	// 		console.log(packet.t, packet.d);
-	// 	}
-	// });
+	client.on("voiceStateUpdate", (oldState, newState) => {
+		if (newState.id === client.user?.id) {
+			console.log("VOICE STATE UPDATE");
+			console.log({
+				channel: newState.channel?.name,
+				sessionId: newState.sessionId,
+			});
+		}
+	});
+
+	client.ws.on("VOICE_SERVER_UPDATE", (data) => {
+		console.log("VOICE SERVER UPDATE", data);
+	});
+
+	client.on("raw", (packet) => {
+		if (
+			packet.t === "VOICE_STATE_UPDATE" ||
+			packet.t === "VOICE_SERVER_UPDATE"
+		) {
+			console.log(packet.t, packet.d);
+		}
+	});
 
 	client.login(process.env.BOT_TOKEN);
 })();
