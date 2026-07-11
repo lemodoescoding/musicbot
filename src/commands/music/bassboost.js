@@ -56,7 +56,7 @@ module.exports = {
             queue.filters.add({
                 name: BASSBOOST_FILTER_NAME,
                 value: `bass=g=${gain}`
-            });
+            }, true);
 
             await interaction.reply({
                 embeds: [makeEmbed({ description: `🔊 Bassboost set to **+${gain}dB**.` })]
