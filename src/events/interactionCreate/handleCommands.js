@@ -24,7 +24,7 @@ module.exports = async (client, interaction) => {
 			(cmd) => cmd.name === interaction.commandName,
 		);
 
-		console.log("[DEBUG] Found command:", commandObject);
+		// console.log("[DEBUG] Found command:", commandObject);
 
 		if (!commandObject) {
 			console.log("[WARNING] Command not found!");

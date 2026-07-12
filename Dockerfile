@@ -1,4 +1,4 @@
-FROM node:22.23-bookworm-slim AS builder
+FROM node:22.12-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -14,21 +14,20 @@ RUN npm ci
 
 COPY . .
 
-FROM node:22.23-bookworm-slim 
+FROM node:22.12-bookworm-slim 
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg curl ca-certificates unzip python3 \
+    python3 ffmpeg curl ca-certificates unzip \
     && rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
-ENV PATH="/usr/local/bin:${PATH}"
 
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
 
-RUN mkdir -p /etc && echo '--remote-components ejs:github --cookies /app/cookies/scratch_cookies.txt' > /etc/yt-dlp.conf
+RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
+
+RUN mkdir -p /etc && echo '--remote-components ejs:github --cookies /app/cookies/scratch_cookies.txt --extractor-args "youtube:player_client=web_safari,web,ios_music,android_music" -f "bestaudio/best"' > /etc/yt-dlp.conf
 
 ENV YTDLP_DISABLE_DOWNLOAD=true
 ENV YTDLP_DIR=/usr/local/bin

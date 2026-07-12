@@ -17,7 +17,7 @@ module.exports = {
      * @param {ChatInputCommandInteraction} interaction
      * */
     callback: async (client, interaction) => {
-        const music = validateVoice(interaction, true);
+        const music = validateVoice(interaction, false);
 
         if(!music) { return; }
 
@@ -26,7 +26,7 @@ module.exports = {
          * */
         const currentQueue = getQueue(client, interaction.guildId);
 
-        const currentSong = currentQueue.songs[0]
+        const currentSong = currentQueue.songs[0] ?? [];
 
         await interaction.reply({
             embeds: [buildNowPlayingEmbed(currentSong, currentQueue)]
