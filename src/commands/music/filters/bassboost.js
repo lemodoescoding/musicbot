@@ -17,7 +17,7 @@ module.exports = async (interaction, queue) => {
 			queue.filters.remove(existed);
 		}
 
-		await interaction.reply({
+		await interaction.editReply({
 			embeds: [makeEmbed({ description: `🔈 Bassboost disabled.` })],
 		});
 
@@ -32,7 +32,7 @@ module.exports = async (interaction, queue) => {
 		true,
 	);
 
-	await interaction.reply({
+	await interaction.editReply({
 		embeds: [
 			makeEmbed({ description: `🔊 Bassboost set to **+${gain}dB**.` }),
 		],

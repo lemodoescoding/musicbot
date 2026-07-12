@@ -13,7 +13,7 @@ module.exports = async (interaction, queue) => {
 	if (existed) {
 		queue.filters.remove(existed);
 
-		await interaction.reply({
+		await interaction.editReply({
 			embeds: [
 				makeEmbed({ description: `🔈 Nightcore effect disabled.` }),
 			],
@@ -30,7 +30,7 @@ module.exports = async (interaction, queue) => {
 		true,
 	);
 
-	await interaction.reply({
+	await interaction.editReply({
 		embeds: [makeEmbed({ description: `🔊 Nightcore effect enabled.` })],
 	});
 };

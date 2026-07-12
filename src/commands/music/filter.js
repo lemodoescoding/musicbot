@@ -99,6 +99,8 @@ module.exports = {
 		const subCommandName = interaction.options.getSubcommand();
 		const handler = subcommands[subCommandName];
 
+        await interaction.deferReply();
+
 		if (!handler) {
 			await interaction.reply({
 				content: `Unknown filter subcommand: ${subCommandName}`,
@@ -111,7 +113,7 @@ module.exports = {
 		try {
 			handler(interaction, queue);
 		} catch (error) {
-			await interaction.reply({
+			await interaction.editReply({
 				content: `There was an error when running command, contact admin.\n\`${error.message}\``,
 				flags: [MessageFlags.Ephemeral],
 			});

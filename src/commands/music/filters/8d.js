@@ -15,7 +15,7 @@ module.exports = async (interaction, queue) => {
 	if (existed && requestedHz === null) {
 		queue.filters.remove(existed);
 
-		await interaction.reply({
+		await interaction.editReply({
 			embeds: [makeEmbed({ description: `🔈 8D effect disabled.` })],
 		});
 
@@ -33,7 +33,7 @@ module.exports = async (interaction, queue) => {
 		true,
 	);
 
-	await interaction.reply({
+	await interaction.editReply({
 		embeds: [
 			makeEmbed({
 				description: `🔊 8D effect set to active on **${hz}Hz** rotation speed.`,

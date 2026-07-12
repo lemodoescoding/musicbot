@@ -14,7 +14,7 @@ module.exports = async (interaction, queue) => {
 	// already active -> toggle off
 	if (existed) {
 		queue.filters.remove(existed);
-		await interaction.reply({
+		await interaction.editReply({
 			embeds: [makeEmbed({ description: `🔈 Tremolo disabled.` })],
 		});
 		return;
@@ -31,7 +31,7 @@ module.exports = async (interaction, queue) => {
 		true,
 	);
 
-	await interaction.reply({
+	await interaction.editReply({
 		embeds: [
 			makeEmbed({
 				description: `🔊 Tremolo effect filter active.`,

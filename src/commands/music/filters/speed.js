@@ -41,7 +41,7 @@ module.exports = async (interaction, queue) => {
 			queue.filters.remove(existing);
 		}
 
-		await interaction.reply({
+		await interaction.editReply({
 			embeds: [
 				makeEmbed({
 					description: `▶️ Playback speed reset to **1x**.`,
@@ -60,7 +60,7 @@ module.exports = async (interaction, queue) => {
 		true,
 	);
 
-	await interaction.reply({
+	await interaction.editReply({
 		embeds: [
 			makeEmbed({
 				description: `🎚️ Playback speed set to **${speed}x**.`,
