@@ -2,11 +2,6 @@ require("dotenv").config();
 
 const path = require("path");
 
-const { Font, FontFactory } = require("canvacord");
-if (!FontFactory.size) {
-	Font.loadDefault();
-}
-
 const { GlobalFonts } = require("@napi-rs/canvas");
 
 GlobalFonts.registerFromPath(
