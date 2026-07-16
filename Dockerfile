@@ -27,7 +27,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
 
-RUN mkdir -p /etc && echo '--remote-components ejs:github --cookies /app/cookies/scratch_cookies.txt --extractor-args "youtube:player_client=web_safari,web,ios_music,android_music" -f "bestaudio/best"' > /etc/yt-dlp.conf
+RUN mkdir -p /etc && echo '--remote-components ejs:github --cookies /app/cookies/scratch_cookies.txt --extractor-args "youtube:player_client=web_safari,web,ios_music,android_music"' > /etc/yt-dlp.conf
 
 ENV YTDLP_DISABLE_DOWNLOAD=true
 ENV YTDLP_DIR=/usr/local/bin
