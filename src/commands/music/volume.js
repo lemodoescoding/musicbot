@@ -40,6 +40,8 @@ module.exports = {
 			10,
 		);
 
+        await interaction.deferReply();
+
 		try {
 			queue.setVolume(volume);
 
