@@ -6,3 +6,9 @@ services:
       - .env
     volumes:
       - ./cookies/master_cookies.txt:/app/cookies/master_cookies.txt:ro
+  pot-provider:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    container_name: pot-provider
+    restart: unless-stopped
+    # no need to publish to the host — only the bot container needs to reach it,
+    # over the internal compose network at http://pot-provider:4416

@@ -22,12 +22,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 ffmpeg curl ca-certificates unzip \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y --no-install-recommends python3-pip \
+    && pip install --break-system-packages -U bgutil-ytdlp-pot-provider \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
 
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
 
-RUN mkdir -p /etc && echo '--remote-components ejs:github --cookies /app/cookies/scratch_cookies.txt --extractor-args "youtube:player_client=web_safari,web,ios_music,android_music"' > /etc/yt-dlp.conf
+RUN mkdir -p /etc && printf '%s\n%s\n' \
+	'--remote-components ejs:github --cookies /app/cookies/scratch_cookies.txt --extractor-args "youtube:player_client=mweb"' \
+	'--extractor-args "youtubepot-bgutilhttp:base_url=http://pot-provider:4416"' \
+	> /etc/yt-dlp.conf
 
 ENV YTDLP_DISABLE_DOWNLOAD=true
 ENV YTDLP_DIR=/usr/local/bin
