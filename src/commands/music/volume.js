@@ -44,7 +44,7 @@ module.exports = {
 			queue.setVolume(volume);
 
 			if (volume !== 0) {
-				await interaction.reply({
+				await interaction.editReply({
 					embeds: [
 						makeEmbed({
 							description: `🔊 Volume of the playback set to ${volume}%.`,
@@ -53,13 +53,13 @@ module.exports = {
 				});
 			}
 
-			await interaction.reply({
+			await interaction.editReply({
 				embeds: [
 					makeEmbed({ description: `🔊 Playback has been muted.` }),
 				],
 			});
 		} catch (error) {
-			await interaction.reply({
+			await interaction.editReply({
 				content: `There was an error when running /volume command.\n\`${error.message}\``,
 				flags: [MessageFlags.Ephemeral],
 			});

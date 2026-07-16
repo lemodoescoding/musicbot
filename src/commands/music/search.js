@@ -65,15 +65,15 @@ module.exports = {
 			const yt = await getYtIClient();
 			const search = await yt.search(input, { type: "video" });
             let results = search.results.filter((s) => {
-                if(s.title?.text !== undefined || s.type === "Video" || s.id !== undefined) {
+                if(s.title?.text === undefined || s.type !== "Video" || s.id === undefined) {
                     return false;
                 }
 
                 const { seconds, isLive } = readDurationInfo(s);
 
-                if(!seconds || seconds <= 0 || seconds > MAX_DURATION_SECONDS || isLive) {
-                    return false;
-                }
+                // if(!seconds || seconds <= 0 || seconds > MAX_DURATION_SECONDS || isLive) {
+                //     return false;
+                // }
 
                 return true;
             });
