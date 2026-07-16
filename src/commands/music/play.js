@@ -12,6 +12,8 @@ const {
 	PermissionFlagsBits,
 } = require("discord.js");
 
+const { readDurationInfo, extractVideoId, checkPlaybackSafety, MAX_DURATION_SECONDS } = require("../../utils/music/checkPlaybackSafe");
+
 const validateVoice = require("../../utils/music/validateVoice");
 const { getYtIClient } = require("../../utils/music/getYtIClient")
 
@@ -47,6 +49,8 @@ module.exports = {
 
 		try {
 			let input = query;
+            let knownDurationSec;
+            let knownIsLive;
 
 			if (!urlRegex) {
 
@@ -59,7 +63,13 @@ module.exports = {
 				// https://github.com/LuanRT/YouTube.js/blob/main/docs/api/youtubei.js/namespaces/Types/type-aliases/SearchFilters.md
 				// https://github.com/LuanRT/YouTube.js/blob/main/docs/api/youtubei.js/namespaces/Types/type-aliases/SearchType.md
 				const search = await yt.search(query, { type: "video" });
-				const top = await search.results?.[0];
+                const top = (search.results ?? []).find(r => {
+                    if(!r?.id) { return false; }
+                    const { seconds, isLive } = readDurationInfo(r);
+
+                    if(isLive) { return false; }
+                    return r.title?.text !== undefined && r.type === "Video" && r.id !== undefined && seconds && seconds <= MAX_DURATION_SECONDS;
+                });
 
 				if (!top?.id) {
                     await interaction.editReply({
@@ -71,7 +81,25 @@ module.exports = {
 				}
 
 				input = `https://www.youtube.com/watch?v=${top.id}`;
+                const topInfo = readDurationInfo(top);
+                knownDurationSec = topInfo.seconds;
+                knownIsLive = topInfo.isLive;
 			}
+
+            const safeCheck = await checkPlaybackSafety({
+                url: input,
+                durationSeconds: knownDurationSec,
+                isLive: knownIsLive
+            });
+
+            if(!safeCheck.allowed) {
+                await interaction.editReply({
+                    content: safeCheck.reason,
+                    flags: [MessageFlags.Ephemeral]
+                });
+
+                return;
+            }
 
             /**
              * @type {Queue}

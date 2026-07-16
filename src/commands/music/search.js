@@ -14,6 +14,7 @@ const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 const { getYtIClient } = require("../../utils/music/getYtIClient");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
+const { MAX_DURATION_SECONDS, readDurationInfo } = require("../../utils/music/checkPlaybackSafe");
 
 const MAX_LIST_EMBED = 10;
 
@@ -64,7 +65,17 @@ module.exports = {
 			const yt = await getYtIClient();
 			const search = await yt.search(input, { type: "video" });
             let results = search.results.filter((s) => {
-                return s.title?.text !== undefined && s.type === "Video" && s.id !== undefined
+                if(s.title?.text !== undefined || s.type === "Video" || s.id !== undefined) {
+                    return false;
+                }
+
+                const { seconds, isLive } = readDurationInfo(s);
+
+                if(!seconds || seconds <= 0 || seconds > MAX_DURATION_SECONDS || isLive) {
+                    return false;
+                }
+
+                return true;
             });
 
 			results = (results || []).slice(0, MAX_LIST_EMBED);
