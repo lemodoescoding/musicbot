@@ -17,7 +17,7 @@ module.exports = {
 	 * @param {ChatInputCommandInteraction} interaction
 	 * */
 	callback: async (client, interaction) => {
-		const music = validateVoice(interaction, true);
+		const music = await validateVoice(interaction, true);
 
 		if (!music) {
 			return;
