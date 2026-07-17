@@ -6,6 +6,18 @@ const makeEmbed = require("../../utils/embeds/makeEmbed");
 
 const {Client, ChatInputCommandInteraction, EmbedBuilder} = require('discord.js');
 const { Queue } = require("distube");
+const { killFifoWriter } = require("@distube/yt-dlp");
+
+/**
+ * @param {import("distube").Song} song
+ * @returns {null | String }
+ * */
+function extractFifoName(song) {
+    const url = String(song?.stream?.url);
+    if(!url || !url.startsWith("file:///")) { return null; }
+
+    return url.split("/").pop() || null;
+}
 
 module.exports = {
     name: 'skip',
@@ -29,6 +41,14 @@ module.exports = {
 
         try {
             const skippedSong = queue.songs[0];
+            const fifoName = extractFifoName(skippedSong);
+            if(fifoName) {
+                const killed = killFifoWriter(fifoName);
+                if(killed) {
+                    console.log(`[skip] Killed active fifo writer ${fifoName} for skipped song "${skippedSong?.name}".`)
+                }
+            }
+
             await queue.skip();
 
             await interaction.reply({

@@ -1,8 +1,19 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..50eabcb 100644
+index b17b126..8486c9f 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
-@@ -120,6 +120,155 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
+@@ -33,7 +33,9 @@ var src_exports = {};
+ __export(src_exports, {
+   YtDlpPlugin: () => YtDlpPlugin,
+   download: () => download,
+-  json: () => json
++  json: () => json,
++  killFifoWriter: () => __killFifoWriter,
++  listActiveFifoWriters: () => __listActiveFifoWriters,
+ });
+ module.exports = __toCommonJS(src_exports);
+ 
+@@ -120,6 +122,184 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
  
  // src/index.ts
  var import_distube = require("distube");
@@ -19,10 +30,7 @@ index b17b126..50eabcb 100644
 +const MAX_FIFO_AGE_MS_DANGLING = Number(process.env.MAX_FIFO_AGE_MS_DANGLING ?? 40 * 60 * 1000);
 +
 +/**
-+ * Removes fifo files older than maxAgeMs. Called opportunistically on every
-+ * new stream request so we don't need to hook into DisTube's finish/error
-+ * events just to clean up — leftover fifos from crashed/killed ffmpeg
-+ * processes get swept on the next song regardless.
++ * removes fifo files older than maxAgeMs. 
 + *
 + * @param {Number} maxAgeMs
 + */
@@ -34,44 +42,35 @@ index b17b126..50eabcb 100644
 +		return;
 +	}
 +	for (const name of entries) {
-+        if(!__fifo_hashmap.has(name)) {
++        if(__fifo_hashmap.has(name)) {
 +            continue;
 +        }
 +
-+        const info = __fifo_hashmap.get(name);
++        const full = __path.join(__FIFO_DIR, name);
 +        const now = Date.now();
 +        try {
-+            if((now - parseInt(info.age, 10)) >= maxAgeMs) {
-+                const full = __path.join(__FIFO_DIR, name);
-+                console.warn(`[fifo-sweep] deleting stale fifo ${name}, age=${((now - info.age)/1000).toFixed(1)}s`);
-+                __fifo_hashmap.delete(name);
-+                __fs.unlinkSync(full);
-+            } else {
-+                console.log(`[fifo-sweep] not deleting ${name}, still in use`);
-+            }
-+        } catch{}
++            const stat = __fs.statSync(full);
++            const age = now - stat.mtimeMs;
 +
-+		// try {
-+		// 	const stat = __fs.statSync(full);
-+  //           const age = now - stat.mTimems;
-+		// 	if (age > maxAgeMs) {
-+  //               console.warn(`[fifo-sweep] deleting stale fifo ${name}, age=${(age/1000).toFixed(1)}s`);
-+  //               __fs.unlinkSync(full);
-+  //           }
-+		// } catch {}
++            if(age > maxAgeMs) {
++				console.warn(`[fifo-sweep] deleting orphaned fifo ${name}, age=${(age / 1000).toFixed(1)}s`);
++				__fs.unlinkSync(full);
++            }
++        } catch {}
 +	}
 +}
 +
++/**
++ * @type {Map<string, { process: import("child_process").ChildProcess, startedAt: Number }>}
++ * */
 +const __fifo_hashmap = new Map();
 +
 +/**
-+ * Creates a named pipe, spawns `yt-dlp -o <fifo> <url>` writing directly
-+ * into it, and returns the fifo's file:// URL. ffmpeg (spawned later by
-+ * DisTube) reads from this path like a normal local file, blocking until
-+ * yt-dlp writes bytes — giving real-time streaming without ffmpeg ever
-+ * making its own network request to googlevideo.com (which gets 403'd due
-+ * to TLS fingerprinting). yt-dlp's own request handler isn't blocked, so
-+ * this sidesteps the issue entirely.
++ * creates a named pipe (fifo), spawns `yt-dlp -o <fifo> <url>` writing directly into it, and returns the fifo's file:// URL. ffmpeg (spawned later by DisTube) reads from this path like a normal local file, blocking until 
++ * yt-dlp writes bytes — giving real-time streaming without ffmpeg ever making its own network request to googlevideo.com (which gets 403 status code due
++ * to TLS fingerprinting). yt-dlp's own request handler isn't blocked, so this sidesteps the issue entirely.
++ *
++ * file:///tmp/yt-dlp-fifos/<uuid>.fifo
 + *
 + * @param {String} videoUrl
 + * @param {String} format
@@ -83,7 +82,7 @@ index b17b126..50eabcb 100644
 +	const fifoName = `${__crypto.randomUUID()}.fifo`;
 +	const fifoPath = __path.join(__FIFO_DIR, fifoName);
 + 
-+	// mkfifo isn't exposed in Node's fs module, so shell out to coreutils.
++	// mkfifo is not exposed in Node.js fs module, so shell out to coreutils.
 +	const mk = require("child_process").spawnSync("mkfifo", [fifoPath]);
 +	if (mk.status !== 0) {
 +		throw new Error(`Failed to create fifo: ${mk.stderr?.toString() || "unknown error"}`);
@@ -95,7 +94,7 @@ index b17b126..50eabcb 100644
 +        { stdio: ["ignore", "ignore", "pipe"], detached: true },
 +	);
 +
-+    __fifo_hashmap.set(fifoName, { age: Date.now() });
++    __fifo_hashmap.set(fifoName, { process: ytdlpProcess, startedAt: Date.now() });
 +    console.log(`[yt-dlp-fifo] added fifo to the map with name of ${fifoName}`)
 +
 +	let stderrTail = "";
@@ -113,17 +112,19 @@ index b17b126..50eabcb 100644
 +	});
 +
 +	ytdlpProcess.unref();
++
++    let unlinkedByTimeout = false;
 + 
 +	// if nothing ever reads the fifo (e.g. DisTube errors out
 +	// before spawning ffmpeg) 
 +    const tmout = setTimeout(() => {
-+        try {
-+            ytdlpProcess.kill("SIGKILL");
-+            __sweepStaleFifos(MAX_FIFO_AGE_MS_DANGLING);
-+            __fs.unlinkSync(fifoPath);
++        unlinkedByTimeout = true;
++        try { ytdlpProcess.kill("SIGKILL"); } catch {}
++        try { __fs.unlinkSync(fifoPath); } catch {}
++            
++        __fifo_hashmap.delete(fifoName);
 +
-+            console.log(`[yt-dlp-fifo] forced stopping and clearing fifo on set after interval of ${MAX_FIFO_AGE_MS_DANGLING}ms exceeded.`)
-+        } catch {}
++        console.log(`[yt-dlp-fifo] forced stopping and clearing fifo on set after interval of ${MAX_FIFO_AGE_MS_DANGLING}ms exceeded.`)
 +    }, MAX_FIFO_AGE_MS_DANGLING);
 +
 +    tmout.unref();
@@ -135,30 +136,69 @@ index b17b126..50eabcb 100644
 +				`--- stderr tail ---\n${stderrTail || "(no output captured)"}\n-------------------`,
 +
 +			);
-+
-+                console.log(__fifo_hashmap);
 +        }
-+		try { 
-+            __fs.unlinkSync(fifoPath);
-+            __fifo_hashmap.delete(fifoName);
 +
-+            console.log(`[yt-dlp-fifo] deleted fifo with the name ${fifoName}`);
++        clearTimeout(tmout);
 +
-+            clearTimeout(tmout);
-+        } catch (e){
-+            console.error(e);
++        if(!unlinkedByTimeout) {
++            try { 
++                __fs.unlinkSync(fifoPath);
++
++                console.log(`[yt-dlp-fifo] deleted fifo with the name ${fifoName}`);
++            } catch (e){
++                if(e.code !== "ENOENT") {
++                    console.error(e);
++                }
++            }
 +        }
++
++
++        __fifo_hashmap.delete(fifoName);
 +	});
 +
 + 
 +	return `file://${fifoPath}`;
 +}
 +
++/**
++ * Kills a fifo writer (ytdlp) using SIGKILL termination signal, based on the information the hashmap holds the PID
++ *
++ * @param {String} fifoName
++ * @returns {Boolean}
++ * */
++function __killFifoWriter(fifoName) {
++    const entry = __fifo_hashmap.get(fifoName);
++    if(!entry) {
++        return false;
++    }
++
++    try {
++        entry.process.kill("SIGKILL");
++        return true;
++    } catch {
++        return false;
++    }
++}
++
++/**
++ * Returns all the active fifo writers listed on the hashmap, returns objects inside an array.
++ *
++ * @returns {{fifoName: String, pid: Number | undefined, runningForMs: Number}[]}
++ * */
++function __listActiveFifoWriters() {
++    const now = Date.now();
++
++    return Array.from(__fifo_hashmap.entries()).map(([fifoName, entry]) => ({
++        fifoName,
++        pid: entry.process?.pid,
++        runningForMs: now - entry.startedAt
++    }));
++}
 +
  var isPlaylist = /* @__PURE__ */ __name((i) => Array.isArray(i.entries), "isPlaylist");
  var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
    static {
-@@ -144,10 +293,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -144,10 +324,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      const info = await json(url, {
        dumpSingleJson: true,
        noWarnings: true,
@@ -172,7 +212,7 @@ index b17b126..50eabcb 100644
      }).catch((e2) => {
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
-@@ -168,22 +318,25 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -168,22 +349,25 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      return new YtDlpSong(this, info, options);
    }
    async getStreamURL(song) {
