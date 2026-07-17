@@ -22,10 +22,6 @@ module.exports = (client) => {
 		emitNewSongOnly: true,
 	});
 
-	// client.distube.on("debug", console.log);
-	// client.distube.on("ffmpegDebug", console.log);
-	client.distube.on("error", console.log);
-
 	const eventFiles = getAllFiles(
 		path.join(__dirname, "..", "events", "distube"),
 	);
