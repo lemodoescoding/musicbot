@@ -41,7 +41,7 @@ module.exports = {
 
         try {
             const hasNext = queue.songs.length > 1;
-            if(!hasNext && queue.repeatMode === RepeatMode.DISABLED || ) {
+            if(!hasNext && queue.repeatMode === RepeatMode.DISABLED) {
                 await interaction.reply({
                     embeds: [makeEmbed({ description: "No next track in queue, stopping the playback."})]
                 });
