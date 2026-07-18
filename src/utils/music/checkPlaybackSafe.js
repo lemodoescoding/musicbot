@@ -1,8 +1,10 @@
-const { getYtIClient } = require("./getYtIClient");
+const { execFile, execFileSync } = require("child_process");
+const { promisify } = require("util");
+const execFileAsync = promisify(execFile);
 
 /**
  * parses a "H:MM:SS" / "MM:SS" duration string into seconds. Returns 0 if the string is missing or unparsable.
- * 
+ *
  * @param {String | undefined} text
  * @returns {Number}
  */
@@ -24,9 +26,7 @@ function readDurationInfo(item) {
 	const isLive = Boolean(item?.is_live);
 
 	const lengthText =
-		item?.length_text?.toString?.() ??
-		item?.duration?.text ??
-		undefined;
+		item?.length_text?.toString?.() ?? item?.duration?.text ?? undefined;
 
 	const seconds = item?.duration?.seconds ?? parseDurationText(lengthText);
 
@@ -34,41 +34,16 @@ function readDurationInfo(item) {
 }
 
 /**
- * maximum allowed track duration, in seconds. 
+ * maximum allowed track duration, in seconds.
  *
  */
-const MAX_DURATION_SECONDS = Number(process.env.MAX_TRACK_DURATION_SECONDS || 30 * 60); // 30 min default
-
-/**
- * xxtracts a YouTube video ID from a watch URL, youtu.be short link, or shorts URL. Returns null if the URL doesn't look like a YouTube link.
- * 
- * @param {String} url
- * @returns {String | null}
- */
-function extractVideoId(url) {
-	try {
-		const parsed = new URL(url);
-
-		if (parsed.hostname.includes("youtu.be")) {
-			return parsed.pathname.slice(1) || null;
-		}
-
-		if (parsed.hostname.includes("youtube.com")) {
-			if (parsed.pathname.startsWith("/shorts/")) {
-				return parsed.pathname.split("/")[2] || null;
-			}
-			return parsed.searchParams.get("v");
-		}
-
-		return null;
-	} catch {
-		return null;
-	}
-}
+const MAX_DURATION_SECONDS = Number(
+	process.env.MAX_TRACK_DURATION_SECONDS || 30 * 60,
+); // 30 min default
 
 /**
  * checks whether a track is allowed to be queued, based on duration and
- * live-stream status. 
+ * live-stream status.
  *
  * @param {{ url?: String, durationSeconds?: Number, isLive?: Boolean }} input
  * @returns {Promise<{ allowed: true } | { allowed: false, reason: string }>}
@@ -78,22 +53,21 @@ async function checkPlaybackSafety({ url, durationSeconds, isLive }) {
 	let live = isLive;
 
 	if (duration === undefined && url) {
-		const videoId = extractVideoId(url);
-
-		if (!videoId) {
-			// not a recognized YouTube URL shape
-			return { allowed: true };
-		}
-
 		try {
-			const yt = await getYtIClient();
-			const info = await yt.getBasicInfo(videoId);
+			const { stdout } = await execFileSync(
+				"yt-dlp",
+				["--skip-download", "--simulate", "--no-warnings", "-j", url],
+				{
+					timeout: 20_000,
+				},
+			);
 
-			duration = info.basic_info.duration ?? 0;
-			live = info.basic_info.is_live ?? false;
-		} catch {
-			// If the lookup itself fails, don't block playback on that 
-            return { allowed: true };
+            const info = JSON.parse(stdout);
+
+            duration = info.duration ?? 0;
+            live = Boolean(info.is_live);
+		} catch (e) {
+			return { allowed: false, reason: error.message };
 		}
 	}
 
@@ -125,4 +99,8 @@ async function checkPlaybackSafety({ url, durationSeconds, isLive }) {
 	return { allowed: true };
 }
 
-module.exports = { checkPlaybackSafety, extractVideoId, readDurationInfo, MAX_DURATION_SECONDS };
+module.exports = {
+	checkPlaybackSafety,
+	readDurationInfo,
+	MAX_DURATION_SECONDS,
+};
