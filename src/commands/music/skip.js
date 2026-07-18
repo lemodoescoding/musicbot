@@ -5,7 +5,7 @@ const validateVoice = require("../../utils/music/validateVoice");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 
 const {Client, ChatInputCommandInteraction, EmbedBuilder} = require('discord.js');
-const { Queue } = require("distube");
+const { Queue, RepeatMode } = require("distube");
 const { killFifoWriter } = require("@distube/yt-dlp");
 
 /**
@@ -40,8 +40,25 @@ module.exports = {
         const queue = getQueue(client, interaction.guildId)
 
         try {
+            const hasNext = queue.songs.length > 1;
+            if(!hasNext && queue.repeatMode === RepeatMode.DISABLED || ) {
+                await interaction.reply({
+                    embeds: [makeEmbed({ description: "No next track in queue, stopping the playback."})]
+                });
+
+                await queue.stop();
+
+                return;
+            }
+
+            if(!hasNext && queue.repeatMode === RepeatMode.SONG) {
+
+            }
+
             const skippedSong = queue.songs[0];
+
             const fifoName = extractFifoName(skippedSong);
+
             if(fifoName) {
                 const killed = killFifoWriter(fifoName);
                 if(killed) {
@@ -49,10 +66,16 @@ module.exports = {
                 }
             }
 
-            await queue.skip();
+            if(queue.repeatMode === RepeatMode.SONG || queue.repeatMode == RepeatMode.DISABLED) {
+                await queue.skip();
+            }
+
+            if(queue.repeatMode === RepeatMode.QUEUE) {
+                await queue.skip({ requeue: true })
+            }
 
             await interaction.reply({
-                embeds: [makeEmbed({description: `⏭️ Skipped ${skippedSong}.`})]
+                embeds: [makeEmbed({ description: `⏭️ Skipped ${skippedSong.name}.`})]
             })
         } catch (error) {
             await interaction.reply({
