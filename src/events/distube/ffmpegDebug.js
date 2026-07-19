@@ -2,7 +2,7 @@
  * @param {String} debug
  * */
 module.exports = (debug) => {
-    if(Boolean(process.env.DISTUBE_DEBUG ?? false) === true) {
+    if(String(process.env.DISTUBE_DEBUG).toLowerCase() === "true") {
         console.log(`[${new Date().toISOString()}] [FFMPEG DEBUG] ${debug}`);
     }
 }
