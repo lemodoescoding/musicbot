@@ -54,7 +54,7 @@ async function checkPlaybackSafety({ url, durationSeconds, isLive }) {
 
 	if (duration === undefined && url) {
 		try {
-			const { stdout } = await execFileSync(
+			const { stdout } = await execFileAsync(
 				"yt-dlp",
 				["--skip-download", "--simulate", "--no-warnings", "-j", url],
 				{
@@ -66,7 +66,7 @@ async function checkPlaybackSafety({ url, durationSeconds, isLive }) {
 
             duration = info.duration ?? 0;
             live = Boolean(info.is_live);
-		} catch (e) {
+		} catch (error) {
 			return { allowed: false, reason: error.message };
 		}
 	}
