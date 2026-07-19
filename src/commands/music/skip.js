@@ -5,7 +5,9 @@ const validateVoice = require("../../utils/music/validateVoice");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 
 const {Client, ChatInputCommandInteraction, EmbedBuilder} = require('discord.js');
-const { Queue } = require("distube");
+const { Queue, RepeatMode } = require("distube");
+
+const { cleanupDownload } = require("@distube/yt-dlp");
 
 module.exports = {
     name: 'skip',
@@ -29,10 +31,35 @@ module.exports = {
 
         try {
             const skippedSong = queue.songs[0];
-            await queue.skip();
+            const hasNext = queue.songs.length > 1;
+            if(!hasNext && queue.repeatMode === RepeatMode.DISABLED) {
+                await interaction.reply({
+                    embeds: [makeEmbed({ description: "No next track in queue, stopping the playback."})]
+                });
+
+                await queue.stop();
+
+                if(skippedSong?.url) {
+                    cleanupDownload(skippedSong.url);
+                }
+
+                return;
+            }
+
+            if(queue.repeatMode == RepeatMode.DISABLED) {
+                await queue.skip();
+
+                if(skippedSong?.url) {
+                    cleanupDownload(skippedSong.url);
+                }
+            }
+
+            if(queue.repeatMode === RepeatMode.SONG || queue.repeatMode === RepeatMode.QUEUE) {
+                await queue.skip({ requeue: true })
+            }
 
             await interaction.reply({
-                embeds: [makeEmbed({description: `⏭️ Skipped ${skippedSong}.`})]
+                embeds: [makeEmbed({ description: `⏭️ Skipped ${skippedSong.name}.`})]
             })
         } catch (error) {
             await interaction.reply({

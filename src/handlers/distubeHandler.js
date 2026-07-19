@@ -11,7 +11,7 @@ const path = require("path");
  * }} client
  * */
 module.exports = (client) => {
-    console.log("[DEBUG] HOME:", process.env.HOME);
+	console.log("[DEBUG] HOME:", process.env.HOME);
 
 	client.distube = new DisTube(client, {
 		plugins: [
@@ -20,11 +20,18 @@ module.exports = (client) => {
 			}),
 		],
 		emitNewSongOnly: true,
+		// ffmpeg: {
+		// 	args: {
+		// 		input: {
+		// 			headers:
+		// 				[
+		// 					"User-Agent: Mozilla/5.0 (iPad; CPU OS 16_7_10 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+		// 					"Referer: https://www.youtube.com/",
+		// 				].join("\r\n") + "\r\n",
+		// 		},
+		// 	},
+		// },
 	});
-
-	// client.distube.on("debug", console.log);
-	// client.distube.on("ffmpegDebug", console.log);
-	client.distube.on("error", console.log);
 
 	const eventFiles = getAllFiles(
 		path.join(__dirname, "..", "events", "distube"),

@@ -4,6 +4,8 @@ const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 
+const { cleanupDownload } = require("@distube/yt-dlp");
+
 module.exports = {
     name: 'remove',
     description: 'Remove a song from the queue by its position.',
@@ -46,6 +48,10 @@ module.exports = {
             }
 
             const [ removed ] = queue.songs.splice(index, 1);
+
+            if(removed?.url) {
+                cleanupDownload(removed.url);
+            }
 
             await interaction.reply({
                 embeds: [makeEmbed({ description: `🗑️ Removed [**${removed.name}**](${removed.url}) from the queue.` })]

@@ -5,6 +5,8 @@ const { Queue } = require("distube");
 const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 
+const { cleanupDownload } = require("@distube/yt-dlp");
+
 module.exports = {
 	name: "stop",
 	description: "Clears the queue and disconnect the bot.",
@@ -26,8 +28,15 @@ module.exports = {
 			 * @type {Queue}
 			 * */
 			const queue = getQueue(client, interaction.guildId);
+            const songsToClean = [queue?.songs[0], ...queue?.songs].filter(Boolean)
 
 			queue.stop();
+
+            for (const song of songsToClean) {
+                if(song?.url) {
+                    cleanupDownload(song.url)
+                }
+            }
 
 			await interaction.reply({
 				content: "⏹️ Stopped playback and cleared the queue.",
