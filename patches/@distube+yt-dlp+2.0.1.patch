@@ -1,204 +1,141 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..8486c9f 100644
+index b17b126..20a1ba6 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
-@@ -33,7 +33,9 @@ var src_exports = {};
+@@ -33,7 +33,8 @@ var src_exports = {};
  __export(src_exports, {
    YtDlpPlugin: () => YtDlpPlugin,
    download: () => download,
 -  json: () => json
 +  json: () => json,
-+  killFifoWriter: () => __killFifoWriter,
-+  listActiveFifoWriters: () => __listActiveFifoWriters,
++  cleanupDownload: () => __cleanupDownload,
  });
  module.exports = __toCommonJS(src_exports);
  
-@@ -120,6 +122,184 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
+@@ -120,6 +121,122 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
  
  // src/index.ts
  var import_distube = require("distube");
 +
-+const { spawn: __spawn } = require("child_process");
++// PATCH START
++const { execFile: __execFile } = require("child_process");
 +const __fs = require("fs");
 +const __os = require("os");
 +const __path = require("path");
 +const __crypto = require("crypto");
 +
-+const __FIFO_DIR = __path.join(__os.tmpdir(), "yt-dlp-fifos");
-+if(!__fs.existsSync(__FIFO_DIR)) __fs.mkdirSync(__FIFO_DIR, { recursive: true });
-+
-+const MAX_FIFO_AGE_MS_DANGLING = Number(process.env.MAX_FIFO_AGE_MS_DANGLING ?? 40 * 60 * 1000);
++const __DOWNLOAD_DIR = __path.join(__os.tmpdir(), "yt-dlp-downloads");
++if(!__fs.existsSync(__DOWNLOAD_DIR)) {
++    __fs.mkdirSync(__DOWNLOAD_DIR, { recursive: true });
++}
 +
 +/**
-+ * removes fifo files older than maxAgeMs. 
++ * tracks currently downloading/downloaded local file based on the ytdlp request and keyed by the original youtube video ID
 + *
-+ * @param {Number} maxAgeMs
-+ */
-+function __sweepStaleFifos(maxAgeMs = 15 * 60 * 1000) {
-+	let entries;
-+	try {
-+		entries = __fs.readdirSync(__FIFO_DIR);
-+	} catch {
-+		return;
-+	}
-+	for (const name of entries) {
-+        if(__fifo_hashmap.has(name)) {
++ * @type {Map<string, string>}
++ * */
++const __downloadedFiles = new Map();
++
++/**
++ * @param { Number } maxAgeMs
++ * */
++function __sweepOrphanedDownloads(maxAgeMs = 60 * 60 * 100) {
++    let entries;
++    try {
++        entries = __fs.readdirSync(__DOWNLOAD_DIR);
++    } catch {
++        return;
++    }
++
++    const tracked = new Set(__downloadedFiles.values());
++    const now = Date.now();
++
++    for(const entry of entries) {
++        const full = __path.join(__DOWNLOAD_DIR, entry);
++        if(tracked.has(full)) {
 +            continue;
 +        }
 +
-+        const full = __path.join(__FIFO_DIR, name);
-+        const now = Date.now();
 +        try {
 +            const stat = __fs.statSync(full);
-+            const age = now - stat.mtimeMs;
-+
-+            if(age > maxAgeMs) {
-+				console.warn(`[fifo-sweep] deleting orphaned fifo ${name}, age=${(age / 1000).toFixed(1)}s`);
-+				__fs.unlinkSync(full);
++            if(now - stat.mtimeMs >= maxAgeMs) {
++                console.warn(`[yt-dlp-download] deleting orphaned file ${entry}`);
++                __fs.unlinkSync(full);
 +            }
 +        } catch {}
-+	}
++    }
 +}
 +
 +/**
-+ * @type {Map<string, { process: import("child_process").ChildProcess, startedAt: Number }>}
++ * @param { String } videoUrl
++ * @param { String } format
++ * @returns {Promise<string>}
 + * */
-+const __fifo_hashmap = new Map();
++function __downloadToLocalFile(videoUrl, format) {
++    __sweepOrphanedDownloads();
 +
-+/**
-+ * creates a named pipe (fifo), spawns `yt-dlp -o <fifo> <url>` writing directly into it, and returns the fifo's file:// URL. ffmpeg (spawned later by DisTube) reads from this path like a normal local file, blocking until 
-+ * yt-dlp writes bytes — giving real-time streaming without ffmpeg ever making its own network request to googlevideo.com (which gets 403 status code due
-+ * to TLS fingerprinting). yt-dlp's own request handler isn't blocked, so this sidesteps the issue entirely.
-+ *
-+ * file:///tmp/yt-dlp-fifos/<uuid>.fifo
-+ *
-+ * @param {String} videoUrl
-+ * @param {String} format
-+ * @returns {String}
-+ */
-+function __createYtDlpFifoStream(videoUrl, format) {
-+	__sweepStaleFifos();
-+ 
-+	const fifoName = `${__crypto.randomUUID()}.fifo`;
-+	const fifoPath = __path.join(__FIFO_DIR, fifoName);
-+ 
-+	// mkfifo is not exposed in Node.js fs module, so shell out to coreutils.
-+	const mk = require("child_process").spawnSync("mkfifo", [fifoPath]);
-+	if (mk.status !== 0) {
-+		throw new Error(`Failed to create fifo: ${mk.stderr?.toString() || "unknown error"}`);
-+	}
-+ 
-+	const ytdlpProcess = __spawn(
-+		"yt-dlp",
-+		["-f", format, "-o", fifoPath, "--no-part", videoUrl],
-+        { stdio: ["ignore", "ignore", "pipe"], detached: true },
-+	);
++    const existing = __downloadedFiles.get(videoUrl);
++    if(existing && __fs.existsSync(existing)) {
++        return Promise.resolve(`file:///${existing}`);
++    }
 +
-+    __fifo_hashmap.set(fifoName, { process: ytdlpProcess, startedAt: Date.now() });
-+    console.log(`[yt-dlp-fifo] added fifo to the map with name of ${fifoName}`)
++    const filename = `${__crypto.randomUUID()}.audio`;
++    const filePath = __path.join(__DOWNLOAD_DIR, filename);
 +
-+	let stderrTail = "";
-+	ytdlpProcess.stderr.on("data", (chunk) => {
-+		stderrTail += chunk.toString();
++    return new Promise((resolve, reject) => {
++        __execFile(
++            "yt-dlp",
++            ["-f", format, "-o", filePath, "--no-part", videoUrl],
++            { timeout: 5 * 60 * 1000 },
++            (error, _, stderr) => {
++                if(error) {
++                    console.error(
++                        `[yt-dlp-download] Download failed for ${videoUrl}:\n` +
++						`--- stderr tail ---\n${(stderr || "").slice(-4096)}\n-------------------`,
++                    );
 +
-+        if(stderrTail.length > 8192) {
-+            stderrTail = stderrTail.slice(-8192);
-+        }
-+	});
++                    try {
++                        __fs.unlinkSync(filePath);
++                    } catch {}
 +
-+
-+	ytdlpProcess.on("error", (err) => {
-+		console.error(`[yt-dlp-fifo] Failed to spawn yt-dlp for ${videoUrl}:`, err);
-+	});
-+
-+	ytdlpProcess.unref();
-+
-+    let unlinkedByTimeout = false;
-+ 
-+	// if nothing ever reads the fifo (e.g. DisTube errors out
-+	// before spawning ffmpeg) 
-+    const tmout = setTimeout(() => {
-+        unlinkedByTimeout = true;
-+        try { ytdlpProcess.kill("SIGKILL"); } catch {}
-+        try { __fs.unlinkSync(fifoPath); } catch {}
-+            
-+        __fifo_hashmap.delete(fifoName);
-+
-+        console.log(`[yt-dlp-fifo] forced stopping and clearing fifo on set after interval of ${MAX_FIFO_AGE_MS_DANGLING}ms exceeded.`)
-+    }, MAX_FIFO_AGE_MS_DANGLING);
-+
-+    tmout.unref();
-+
-+	ytdlpProcess.on("exit", (code) => {
-+        if(code !== 0) {
-+			console.error(
-+				`[yt-dlp-fifo] Writer process for ${videoUrl} exited with code ${code}.\n` +
-+				`--- stderr tail ---\n${stderrTail || "(no output captured)"}\n-------------------`,
-+
-+			);
-+        }
-+
-+        clearTimeout(tmout);
-+
-+        if(!unlinkedByTimeout) {
-+            try { 
-+                __fs.unlinkSync(fifoPath);
-+
-+                console.log(`[yt-dlp-fifo] deleted fifo with the name ${fifoName}`);
-+            } catch (e){
-+                if(e.code !== "ENOENT") {
-+                    console.error(e);
++                    reject(error);
++                    return;
 +                }
++
++                __downloadedFiles.set(videoUrl, filePath);
++                if(Boolean(process.env.DISTUBE_DEBUG ?? false) === true) {
++                    console.log(`[yt-dlp-downloads] Downloaded ${videoUrl} to ${filePath}`)
++                }
++                resolve(`file://${filePath}`);
 +            }
-+        }
-+
-+
-+        __fifo_hashmap.delete(fifoName);
-+	});
-+
-+ 
-+	return `file://${fifoPath}`;
++        )
++    })
 +}
 +
 +/**
-+ * Kills a fifo writer (ytdlp) using SIGKILL termination signal, based on the information the hashmap holds the PID
-+ *
-+ * @param {String} fifoName
-+ * @returns {Boolean}
++ * @param {String} videoUrl
 + * */
-+function __killFifoWriter(fifoName) {
-+    const entry = __fifo_hashmap.get(fifoName);
-+    if(!entry) {
-+        return false;
++function __cleanupDownload(videoUrl) {
++    const filePath = __downloadedFiles.get(videoUrl);
++    if(!filePath) {
++        return;
 +    }
 +
 +    try {
-+        entry.process.kill("SIGKILL");
-+        return true;
-+    } catch {
-+        return false;
-+    }
++        __fs.unlinkSync(filePath)
++
++        if(Boolean(process.env.DISTUBE_DEBUG ?? false) === true) {
++            console.log(`[yt-dlp-downloads] Deleted ${videoUrl} on path ${filePath}`);
++        }
++    } catch {}
 +}
 +
-+/**
-+ * Returns all the active fifo writers listed on the hashmap, returns objects inside an array.
-+ *
-+ * @returns {{fifoName: String, pid: Number | undefined, runningForMs: Number}[]}
-+ * */
-+function __listActiveFifoWriters() {
-+    const now = Date.now();
-+
-+    return Array.from(__fifo_hashmap.entries()).map(([fifoName, entry]) => ({
-+        fifoName,
-+        pid: entry.process?.pid,
-+        runningForMs: now - entry.startedAt
-+    }));
-+}
++// PATCH ENDS
 +
  var isPlaylist = /* @__PURE__ */ __name((i) => Array.isArray(i.entries), "isPlaylist");
  var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
    static {
-@@ -144,10 +324,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -144,10 +261,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      const info = await json(url, {
        dumpSingleJson: true,
        noWarnings: true,
@@ -212,7 +149,7 @@ index b17b126..8486c9f 100644
      }).catch((e2) => {
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
-@@ -168,22 +349,25 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -168,22 +286,28 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      return new YtDlpSong(this, info, options);
    }
    async getStreamURL(song) {
@@ -220,24 +157,37 @@ index b17b126..8486c9f 100644
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
-     const info = await json(song.url, {
-       dumpSingleJson: true,
-       noWarnings: true,
+-    const info = await json(song.url, {
+-      dumpSingleJson: true,
+-      noWarnings: true,
 -      noCallHome: true,
-+      // noCallHome: true,
-       preferFreeFormats: true,
-       skipDownload: true,
-       simulate: true,
+-      preferFreeFormats: true,
+-      skipDownload: true,
+-      simulate: true,
 -      format: "ba/ba*"
-+      format: "ba/18/91/worst"
-     }).catch((e2) => {
-       throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
-     });
-     if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
+-    }).catch((e2) => {
+-      throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
+-    });
+-    if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
 -    return info.url;
 +
++    // console.log("[getStreamURL] " + new Date().toISOString());
++
++    // const info = await json(song.url, {
++    //   dumpSingleJson: true,
++    //   noWarnings: true,
++    //   // noCallHome: true,
++    //   preferFreeFormats: true,
++    //   skipDownload: true,
++    //   simulate: true,
++    //   format: "ba/18/91/worst"
++    // }).catch((e2) => {
++    //   throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
++    // });
++    // if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
++
 +    // return info.url;
-+    return __createYtDlpFifoStream(song.url, "ba/18/91/worst");
++    return __downloadToLocalFile(song.url, "ba/18/91/worst");
    }
    getRelatedSongs() {
      return [];
