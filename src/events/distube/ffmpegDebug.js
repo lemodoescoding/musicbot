@@ -3,6 +3,6 @@
  * */
 module.exports = (debug) => {
     if(Boolean(process.env.DISTUBE_DEBUG ?? false) === true) {
-        console.log(`[FFMPEG DEBUG] ${debug}`);
+        console.log(`[${new Date().toISOString()}] [FFMPEG DEBUG] ${debug}`);
     }
 }
