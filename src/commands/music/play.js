@@ -123,6 +123,10 @@ module.exports = {
                 }
             }
 
+            await interaction.editReply({
+                content: `🔍 Found it — preparing playback, this may take a few seconds while it downloads...`,
+            });
+
 			await client.distube.play(voiceChannel, input, {
 				interaction,
 				member: interaction.member,

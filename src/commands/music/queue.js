@@ -7,6 +7,8 @@ const formatQueueEmbed = require("../../utils/embeds/formatQueueEmbed");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 const paginateEmbeds = require("../../utils/embeds/paginateEmbeds");
 
+const { cleanupDownload } = require("@distube/yt-dlp");
+
 module.exports = {
     name: "queue",
     description: "Manage the song queue.",
@@ -46,11 +48,16 @@ module.exports = {
             }
 
             if (sub === "clear") {
-                const removed = queue.songs.length - 1;
-                queue.songs = [queue.songs[0]];
+                const num_removed = queue.songs.length - 1;
+                const removed = queue.songs.slice(1);
+                queue.songs.length = 1;
+
+                for(const song of removed) {
+                    if(song?.url) { cleanupDownload(song.url) }
+                }
 
                 await interaction.reply({
-                    embeds: [makeEmbed({ description: `🗑️ Cleared **${removed}** song${removed === 1 ? "" : "s"} from the queue.` })]
+                    embeds: [makeEmbed({ description: `🗑️ Cleared **${num_removed}** song${num_removed === 1 ? "" : "s"} from the queue.` })]
                 });
                 return;
             }

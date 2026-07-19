@@ -6,18 +6,8 @@ const makeEmbed = require("../../utils/embeds/makeEmbed");
 
 const {Client, ChatInputCommandInteraction, EmbedBuilder} = require('discord.js');
 const { Queue, RepeatMode } = require("distube");
-const { killFifoWriter } = require("@distube/yt-dlp");
 
-/**
- * @param {import("distube").Song} song
- * @returns {null | String }
- * */
-function extractFifoName(song) {
-    const url = String(song?.stream?.url);
-    if(!url || !url.startsWith("file:///")) { return null; }
-
-    return url.split("/").pop() || null;
-}
+const { cleanupDownload } = require("@distube/yt-dlp");
 
 module.exports = {
     name: 'skip',
@@ -40,6 +30,7 @@ module.exports = {
         const queue = getQueue(client, interaction.guildId)
 
         try {
+            const skippedSong = queue.songs[0];
             const hasNext = queue.songs.length > 1;
             if(!hasNext && queue.repeatMode === RepeatMode.DISABLED) {
                 await interaction.reply({
@@ -48,29 +39,22 @@ module.exports = {
 
                 await queue.stop();
 
+                if(skippedSong?.url) {
+                    cleanupDownload(skippedSong.url);
+                }
+
                 return;
             }
 
-            if(!hasNext && queue.repeatMode === RepeatMode.SONG) {
+            if(queue.repeatMode == RepeatMode.DISABLED) {
+                await queue.skip();
 
-            }
-
-            const skippedSong = queue.songs[0];
-
-            const fifoName = extractFifoName(skippedSong);
-
-            if(fifoName) {
-                const killed = killFifoWriter(fifoName);
-                if(killed) {
-                    console.log(`[skip] Killed active fifo writer ${fifoName} for skipped song "${skippedSong?.name}".`)
+                if(skippedSong?.url) {
+                    cleanupDownload(skippedSong.url);
                 }
             }
 
-            if(queue.repeatMode === RepeatMode.SONG || queue.repeatMode == RepeatMode.DISABLED) {
-                await queue.skip();
-            }
-
-            if(queue.repeatMode === RepeatMode.QUEUE) {
+            if(queue.repeatMode === RepeatMode.SONG || queue.repeatMode === RepeatMode.QUEUE) {
                 await queue.skip({ requeue: true })
             }
 

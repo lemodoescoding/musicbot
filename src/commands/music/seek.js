@@ -9,6 +9,8 @@ const makeEmbed = require("../../utils/embeds/makeEmbed");
 const formatDuration = require("../../utils/music/formatDuration");
 const parseTimeInput = require("../../utils/music/parseTimeInput");
 
+const { killFifoWriter } = require("@distube/yt-dlp")
+
 module.exports = {
     name: "seek",
     description: "Sets the time of the playback.test",
@@ -63,6 +65,15 @@ module.exports = {
                 });
                 return;
             }
+
+            // const fifoName = extractFifoName(currentSong);
+            // if (fifoName) {
+            //     killFifoWriter(fifoName);
+            // }
+            //
+            // const plugin = currentSong.plugin;
+            // const newUrl = await plugin.getStreamURL(currentSong, time);
+            // currentSong.stream.url = newUrl;
 
             queue.seek(time);
 
