@@ -133,7 +133,9 @@ module.exports = {
 				textChannel: interaction.channel,
 			});
 
-			await interaction.deleteReply();
+            await interaction.editReply({
+                content: `🎵 Playing now...`
+            })
 		} catch (error) {
 			await interaction.editReply({
 				content: `Failed to play music.\n\`${error.message}\`\n${error.stack}`,

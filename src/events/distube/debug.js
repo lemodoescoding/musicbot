@@ -2,7 +2,7 @@
  * @param {String} debug
  * */
 module.exports = (debug) => {
-    if(Boolean(process.env.DISTUBE_DEBUG ?? false) === true) {
+    if(process.env.DISTUBE_DEBUG === "true") {
         console.log(`[${new Date().toISOString()}] [DEBUG] ${debug}`);
     }
 }

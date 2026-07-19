@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..20a1ba6 100644
+index b17b126..a2127f4 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -33,7 +33,8 @@ var src_exports = {};
@@ -39,7 +39,7 @@ index b17b126..20a1ba6 100644
 +/**
 + * @param { Number } maxAgeMs
 + * */
-+function __sweepOrphanedDownloads(maxAgeMs = 60 * 60 * 100) {
++function __sweepOrphanedDownloads(maxAgeMs = 45 * 60 * 1000) {
 +    let entries;
 +    try {
 +        entries = __fs.readdirSync(__DOWNLOAD_DIR);
@@ -103,7 +103,7 @@ index b17b126..20a1ba6 100644
 +                }
 +
 +                __downloadedFiles.set(videoUrl, filePath);
-+                if(Boolean(process.env.DISTUBE_DEBUG ?? false) === true) {
++                if(String(process.env.DISTUBE_DEBUG).toLowerCase() === "true") {
 +                    console.log(`[yt-dlp-downloads] Downloaded ${videoUrl} to ${filePath}`)
 +                }
 +                resolve(`file://${filePath}`);
@@ -124,7 +124,7 @@ index b17b126..20a1ba6 100644
 +    try {
 +        __fs.unlinkSync(filePath)
 +
-+        if(Boolean(process.env.DISTUBE_DEBUG ?? false) === true) {
++        if(String(process.env.DISTUBE_DEBUG).toLowerCase() === "true") {
 +            console.log(`[yt-dlp-downloads] Deleted ${videoUrl} on path ${filePath}`);
 +        }
 +    } catch {}
