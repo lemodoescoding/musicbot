@@ -1,18 +1,19 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..a2127f4 100644
+index b17b126..91ab7ea 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
-@@ -33,7 +33,8 @@ var src_exports = {};
+@@ -33,7 +33,9 @@ var src_exports = {};
  __export(src_exports, {
    YtDlpPlugin: () => YtDlpPlugin,
    download: () => download,
 -  json: () => json
 +  json: () => json,
 +  cleanupDownload: () => __cleanupDownload,
++  preFetchSong: () => __preFetchSong,
  });
  module.exports = __toCommonJS(src_exports);
  
-@@ -120,6 +121,122 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
+@@ -120,6 +122,159 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
  
  // src/index.ts
  var import_distube = require("distube");
@@ -37,7 +38,16 @@ index b17b126..a2127f4 100644
 +const __downloadedFiles = new Map();
 +
 +/**
-+ * @param { Number } maxAgeMs
++ * tracks the video audio stream that is currently in downloading phase
++ *
++ * @type {Map<string, Promise<string>>}
++ * */
++const __inFlightDownloads = new Map();
++
++/**
++ * deletes orphaned audio stream downloaded after maxAgeMs
++ *
++ * @param { number } maxAgeMs
 + * */
 +function __sweepOrphanedDownloads(maxAgeMs = 45 * 60 * 1000) {
 +    let entries;
@@ -67,22 +77,33 @@ index b17b126..a2127f4 100644
 +}
 +
 +/**
-+ * @param { String } videoUrl
-+ * @param { String } format
-+ * @returns {Promise<string>}
++ * main function that handles downloading the audio replacing the default mechanism
++ * of the ytdlp and ffmpeg pipeline
++ *
++ * @param { string } videoUrl
++ * @param { string } format
++ * @returns {Promise<String>}
 + * */
 +function __downloadToLocalFile(videoUrl, format) {
 +    __sweepOrphanedDownloads();
 +
 +    const existing = __downloadedFiles.get(videoUrl);
 +    if(existing && __fs.existsSync(existing)) {
-+        return Promise.resolve(`file:///${existing}`);
++        return Promise.resolve(`file://${existing}`);
++    }
++    
++    /**
++     * @type {Promise<string> | null}
++     * */
++    const inFlight = __inFlightDownloads.get(videoUrl);
++    if(inFlight) {
++        return inFlight;
 +    }
 +
 +    const filename = `${__crypto.randomUUID()}.audio`;
 +    const filePath = __path.join(__DOWNLOAD_DIR, filename);
 +
-+    return new Promise((resolve, reject) => {
++    const __promise = new Promise((resolve, reject) => {
 +        __execFile(
 +            "yt-dlp",
 +            ["-f", format, "-o", filePath, "--no-part", videoUrl],
@@ -109,11 +130,28 @@ index b17b126..a2127f4 100644
 +                resolve(`file://${filePath}`);
 +            }
 +        )
++    });
++
++    __inFlightDownloads.set(videoUrl, __promise);
++    return __promise;
++}
++
++/**
++ * function to prefetch a song while still in queue
++ *
++ * @param {string} videoUrl
++ * @returns {Promise<string | void>}
++ * */
++async function __preFetchSong(videoUrl) {
++    return await __downloadToLocalFile(videoUrl, "ba/18/91/worst").catch((err) => {
++        console.warn(`[prefetch] failed prefetching media for ${videoUrl}: ${err.message}`);
 +    })
 +}
 +
 +/**
-+ * @param {String} videoUrl
++ * function to cleanup downladed audio stream
++ *
++ * @param {string} videoUrl
 + * */
 +function __cleanupDownload(videoUrl) {
 +    const filePath = __downloadedFiles.get(videoUrl);
@@ -135,7 +173,7 @@ index b17b126..a2127f4 100644
  var isPlaylist = /* @__PURE__ */ __name((i) => Array.isArray(i.entries), "isPlaylist");
  var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
    static {
-@@ -144,10 +261,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -144,10 +299,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      const info = await json(url, {
        dumpSingleJson: true,
        noWarnings: true,
@@ -149,10 +187,12 @@ index b17b126..a2127f4 100644
      }).catch((e2) => {
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
-@@ -168,22 +286,28 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -168,22 +324,33 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      return new YtDlpSong(this, info, options);
    }
    async getStreamURL(song) {
++    // PATCH START
++
 +    console.log(`[getStreamURL] called for ${song.url} at ${Date.now()}`);
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
@@ -187,7 +227,10 @@ index b17b126..a2127f4 100644
 +    // if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
 +
 +    // return info.url;
++
 +    return __downloadToLocalFile(song.url, "ba/18/91/worst");
++
++    // PATCH ENDS
    }
    getRelatedSongs() {
      return [];

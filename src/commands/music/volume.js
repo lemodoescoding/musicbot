@@ -53,6 +53,8 @@ module.exports = {
 						}),
 					],
 				});
+
+                return;
 			}
 
 			await interaction.editReply({

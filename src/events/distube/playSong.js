@@ -2,6 +2,7 @@ const buildNowPlayingEmbed = require("../../utils/music/buildNowPlayingEmbed");
 const { Queue, Song } = require("distube");
 const { Message } = require("discord.js");
 
+
 /**
  * @param {Queue & {
  *  _npMessage: import("discord.js").Message | undefined
@@ -25,9 +26,21 @@ module.exports = async (queue, song) => {
 		}
 	}
 
-	const sent = await queue.textChannel?.send({
-		embeds: [embed],
-	});
+    /**
+     * @type {import("discord.js").Message}
+     * */
+    let sent;
+
+    try {
+        sent = await queue.textChannel?.send({
+            embeds: [embed],
+        });
+    } catch (error){
+        console.error(
+			`[playSong] Failed to send now-playing message in guild ${queue.id}, channel ${queue.textChannel?.id}:`,
+			error.message,
+		);
+    }
 
 	/**
 	 * @type {Queue & {
@@ -36,4 +49,16 @@ module.exports = async (queue, song) => {
 	 * */
 	queue._npMessage = sent;
 	console.log("[playSong] sent new message, id:", sent?.id);
+
+    const nextSong = queue.songs[1];
+    if(nextSong?.url) {
+        const { preFetchSong } = require("@distube/yt-dlp");
+        preFetchSong(nextSong.url).catch((e) => {
+            console.error(
+				`[playSong] Prefetch failed for next song "${nextSong.name}":`,
+				error.message,
+			);
+
+        });
+    }
 };
