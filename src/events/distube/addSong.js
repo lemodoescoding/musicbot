@@ -7,7 +7,7 @@ const { Queue, Song } = require("distube");
  * @param {Queue} queue
  * @param {Song} song
  * */
-module.exports = (queue, song) => {
+module.exports = async (queue, song) => {
     const position = queue.songs.findIndex(s => s === song);
 
     if(position <= 0) { return; }
@@ -20,7 +20,25 @@ module.exports = (queue, song) => {
         {name: "Position", value: `#${position}`, inline: true},
         {name: "Requested by", value: `${song.user}`, inline: true}
     )
-    queue.textChannel?.send({
-        embeds: [embed]
-    });
+
+    try {
+        await queue.textChannel?.send({
+            embeds: [embed]
+        });
+    } catch {
+        console.error(
+			`[addSong] Failed to send add-song message in guild ${queue.id}, channel ${queue.textChannel?.id}:`,
+			error.message,
+		);
+    }
+
+    if(queue.songs.length === 2 && queue.songs[1] === song) {
+        const { preFetchSong } = require("@distube/yt-dlp");
+        preFetchSong(song.url).catch((e) => {
+            console.error(
+				`[playSong] Prefetch failed for next song "${nextSong.name}":`,
+				error.message,
+			);
+        }); 
+    }
 }

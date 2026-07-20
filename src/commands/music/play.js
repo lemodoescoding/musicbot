@@ -123,9 +123,17 @@ module.exports = {
                 }
             }
 
-            await interaction.editReply({
-                content: `🔍 Found it — preparing playback, this may take a few seconds while it downloads...`,
-            });
+            if(!currentQueue?.songs) {
+                await interaction.editReply({
+                    content: `🔍 Found it — preparing playback, this may take a few seconds while it downloads...`,
+                });
+            } 
+
+            if(currentQueue && currentQueue.songs.length >= 1){
+                await interaction.editReply({
+                    content: `🔍 Found it — adding it to playback...`,
+                });
+            }
 
 			await client.distube.play(voiceChannel, input, {
 				interaction,
@@ -133,14 +141,14 @@ module.exports = {
 				textChannel: interaction.channel,
 			});
 
-            await interaction.editReply({
-                content: `🎵 Playing now...`
-            })
+			await interaction.deleteReply();
 		} catch (error) {
 			await interaction.editReply({
-				content: `Failed to play music.\n\`${error.message}\`\n${error.stack}`,
-                flags: [MessageFlags.Ephemeral]
+				content: `Failed to play music.\n\`${error.message}\``,
 			});
+
+            console.log(error);
+            console.log(error.stack);
 		}
 	},
 };
