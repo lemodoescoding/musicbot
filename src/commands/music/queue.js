@@ -7,7 +7,7 @@ const formatQueueEmbed = require("../../utils/embeds/formatQueueEmbed");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 const paginateEmbeds = require("../../utils/embeds/paginateEmbeds");
 
-const { cleanupDownload } = require("@distube/yt-dlp");
+const { release, cleanupDownload } = require("@distube/yt-dlp");
 
 module.exports = {
     name: "queue",
@@ -53,7 +53,10 @@ module.exports = {
                 queue.songs.length = 1;
 
                 for(const song of removed) {
-                    if(song?.url) { cleanupDownload(song.url) }
+                    if(song?.url) { 
+                        release(song.url);
+                        cleanupDownload(song.url);
+                    }
                 }
 
                 await interaction.reply({

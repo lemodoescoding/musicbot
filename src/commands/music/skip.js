@@ -7,7 +7,7 @@ const makeEmbed = require("../../utils/embeds/makeEmbed");
 const {Client, ChatInputCommandInteraction, EmbedBuilder} = require('discord.js');
 const { Queue, RepeatMode } = require("distube");
 
-const { cleanupDownload } = require("@distube/yt-dlp");
+const { release, cleanupDownload } = require("@distube/yt-dlp");
 
 module.exports = {
     name: 'skip',
@@ -40,6 +40,7 @@ module.exports = {
                 await queue.stop();
 
                 if(skippedSong?.url) {
+                    release(skippedSong.url);
                     cleanupDownload(skippedSong.url);
                 }
 
@@ -50,6 +51,7 @@ module.exports = {
                 await queue.skip();
 
                 if(skippedSong?.url) {
+                    release(skippedSong.url);
                     cleanupDownload(skippedSong.url);
                 }
             }

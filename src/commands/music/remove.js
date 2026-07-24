@@ -4,7 +4,7 @@ const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 
-const { cleanupDownload } = require("@distube/yt-dlp");
+const { release, cleanupDownload } = require("@distube/yt-dlp");
 
 module.exports = {
     name: 'remove',
@@ -50,6 +50,7 @@ module.exports = {
             const [ removed ] = queue.songs.splice(index, 1);
 
             if(removed?.url) {
+                release(removed.url);
                 cleanupDownload(removed.url);
             }
 
