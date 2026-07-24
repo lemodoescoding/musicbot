@@ -1,8 +1,8 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..91ab7ea 100644
+index b17b126..4f3f485 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
-@@ -33,7 +33,9 @@ var src_exports = {};
+@@ -33,7 +33,10 @@ var src_exports = {};
  __export(src_exports, {
    YtDlpPlugin: () => YtDlpPlugin,
    download: () => download,
@@ -10,10 +10,11 @@ index b17b126..91ab7ea 100644
 +  json: () => json,
 +  cleanupDownload: () => __cleanupDownload,
 +  preFetchSong: () => __preFetchSong,
++  release: () => __release
  });
  module.exports = __toCommonJS(src_exports);
  
-@@ -120,6 +122,159 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
+@@ -120,6 +123,240 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
  
  // src/index.ts
  var import_distube = require("distube");
@@ -31,36 +32,40 @@ index b17b126..91ab7ea 100644
 +}
 +
 +/**
-+ * tracks currently downloading/downloaded local file based on the ytdlp request and keyed by the original youtube video ID
-+ *
-+ * @type {Map<string, string>}
++ * The map variable that will track incoming track downloads, releases, usage and sweep
++ * @type {Map<string, {
++ *  filePath: string | null,
++ *  downloadPromise: Promise<string> | null,
++ *  refCount: number,
++ *  markedForDeletion: boolean
++ * }>}
 + * */
-+const __downloadedFiles = new Map();
++const __fileState = new Map();
 +
 +/**
-+ * tracks the video audio stream that is currently in downloading phase
-+ *
-+ * @type {Map<string, Promise<string>>}
++ * @param {string} videoUrl
 + * */
-+const __inFlightDownloads = new Map();
-+
-+/**
-+ * deletes orphaned audio stream downloaded after maxAgeMs
-+ *
-+ * @param { number } maxAgeMs
-+ * */
-+function __sweepOrphanedDownloads(maxAgeMs = 45 * 60 * 1000) {
-+    let entries;
-+    try {
-+        entries = __fs.readdirSync(__DOWNLOAD_DIR);
-+    } catch {
-+        return;
++function __getOrCreateState(videoUrl) {
++    let state = __fileState.get(videoUrl);
++    if(!state) {
++        state = {filePath: null, downloadPromise: null, refCount: 0, markedForDeletion: false};
++        __fileState.set(videoUrl, state);
 +    }
 +
-+    const tracked = new Set(__downloadedFiles.values());
++    return state;
++}
++
++function __sweepOrphanedDownloads(maxAgeMs = 30 * 60 * 1000) {
++    let entries;
++    try {
++        entries = __fs.readvSync(__DOWNLOAD_DIR);
++    } catch { return; }
++
++    const tracked = new Set(Array.from(__fileState.values()).map(s => s.filePath).filter(Boolean));
++
 +    const now = Date.now();
 +
-+    for(const entry of entries) {
++    for (const entry of entries) {
 +        const full = __path.join(__DOWNLOAD_DIR, entry);
 +        if(tracked.has(full)) {
 +            continue;
@@ -69,7 +74,7 @@ index b17b126..91ab7ea 100644
 +        try {
 +            const stat = __fs.statSync(full);
 +            if(now - stat.mtimeMs >= maxAgeMs) {
-+                console.warn(`[yt-dlp-download] deleting orphaned file ${entry}`);
++                console.warn(`[yt-dlp-downloads] deleting orphaned file ${entry}`);
 +                __fs.unlinkSync(full);
 +            }
 +        } catch {}
@@ -80,40 +85,37 @@ index b17b126..91ab7ea 100644
 + * main function that handles downloading the audio replacing the default mechanism
 + * of the ytdlp and ffmpeg pipeline
 + *
-+ * @param { string } videoUrl
-+ * @param { string } format
-+ * @returns {Promise<String>}
++ * @param {string} videoUrl
++ * @param {string} format
++ * @returns {Promise<string>}
 + * */
-+function __downloadToLocalFile(videoUrl, format) {
++function __acquire(videoUrl, format) {
 +    __sweepOrphanedDownloads();
 +
-+    const existing = __downloadedFiles.get(videoUrl);
-+    if(existing && __fs.existsSync(existing)) {
-+        return Promise.resolve(`file://${existing}`);
++    const state = __getOrCreateState(videoUrl);
++    state.refCount++;
++
++    if(state.filePath && __fs.existsSync(state.filePath)) {
++        return Promise.resolve(`file://${state.filePath}`);
 +    }
-+    
-+    /**
-+     * @type {Promise<string> | null}
-+     * */
-+    const inFlight = __inFlightDownloads.get(videoUrl);
-+    if(inFlight) {
-+        return inFlight;
++
++    if(state.downloadPromise) {
++        return state.downloadPromise;
 +    }
 +
 +    const filename = `${__crypto.randomUUID()}.audio`;
 +    const filePath = __path.join(__DOWNLOAD_DIR, filename);
 +
-+    const __promise = new Promise((resolve, reject) => {
++    state.downloadPromise = new Promise((resolve, reject) => {
 +        __execFile(
 +            "yt-dlp",
 +            ["-f", format, "-o", filePath, "--no-part", videoUrl],
 +            { timeout: 5 * 60 * 1000 },
 +            (error, _, stderr) => {
++                state.downloadPromise = null;
++
 +                if(error) {
-+                    console.error(
-+                        `[yt-dlp-download] Download failed for ${videoUrl}:\n` +
-+						`--- stderr tail ---\n${(stderr || "").slice(-4096)}\n-------------------`,
-+                    );
++                    console.log(`[yt-dlp-download] Download failed for ${videoUrl}:\nStderr tail fail: ${(stderr || "").slice(-4096)}`);
 +
 +                    try {
 +                        __fs.unlinkSync(filePath);
@@ -123,17 +125,117 @@ index b17b126..91ab7ea 100644
 +                    return;
 +                }
 +
-+                __downloadedFiles.set(videoUrl, filePath);
-+                if(String(process.env.DISTUBE_DEBUG).toLowerCase() === "true") {
-+                    console.log(`[yt-dlp-downloads] Downloaded ${videoUrl} to ${filePath}`)
-+                }
++                state.filePath = filePath;
 +                resolve(`file://${filePath}`);
++
++                if(state.markedForDeletion && state.refCount <= 0) {
++                    __actuallyDelete(videoUrl, state);
++                }
 +            }
 +        )
 +    });
 +
-+    __inFlightDownloads.set(videoUrl, __promise);
-+    return __promise;
++    return state.downloadPromise;
++}
++
++/**
++ * @param {string} videoUrl
++ * */
++function __release(videoUrl) {
++    const state = __fileState.get(videoUrl);
++    if(!state) {
++        return;
++    }
++
++    state.refCount = Math.max(0, state.refCount - 1);
++    if(state.refCount === 0 && state.markedForDeletion) {
++        __actuallyDelete(videoUrl, state);
++    }
++}
++
++/**
++ * @param {string} videoUrl
++ * @param {{
++ *  filePath: string | null,
++ *  downloadPromise: Promise<string> | null,
++ *  refCount: number,
++ *  markedForDeletion: boolean
++ * }} state
++ * */
++function __actuallyDelete(videoUrl, state) {
++    if(state.filePath) {
++        try {
++            __fs.unlinkSync(state.filePath);
++        } catch {}
++    }
++
++    __fileState.delete(videoUrl);
++}
++
++/**
++ * function to cleanup downladed audio stream
++ *
++ * @param {string} videoUrl
++ * */
++function __cleanupDownload(videoUrl) {
++    const state = __fileState.get(videoUrl);
++    if(!state) {
++        return;
++    }
++
++    if(state.refCount > 0 || state.downloadPromise) {
++        state.markedForDeletion = true;
++        return;
++    }
++
++    __actuallyDelete(videoUrl, state);
++}
++
++/**
++ * @param {string} videoUrl
++ * @param {string} format
++ * @returns {Promise<string>}
++ * */
++function __prefetch(videoUrl, format) {
++    __sweepOrphanedDownloads();
++
++    const state = __getOrCreateState(videoUrl);
++
++    if(state.filePath && __fs.existsSync(state.filePath)) {
++        return Promise.resolve();
++    }
++
++    if(state.downloadPromise) {
++        return state.downloadPromise;
++    }
++
++    const filename = `${__crypto.randomUUID()}.audio`;
++    const filePath = __path.join(__DOWNLOAD_DIR, filename);
++
++    state.downloadPromise = new Promise((resolve, reject) => {
++        __execFile(
++            "yt-dlp",
++            ["-f", format, "-o", filePath, "--no-part", videoUrl],
++            { timeout: 5 * 60 * 1000 },
++            (error, _, stderr) => {
++                state.downloadPromise = null;
++                if(error) {
++                    try {
++                        __fs.unlinkSync(filePath);
++                    } catch {}
++
++                }
++
++                state.filePath = filePath;
++
++                resolve(`file://${filePath}`);
++
++                if(state.markedForDeletion && state.refCount <= 0) {
++                    __actuallyDelete(videoUrl, state);
++                }
++            }
++        )
++    })
 +}
 +
 +/**
@@ -143,29 +245,9 @@ index b17b126..91ab7ea 100644
 + * @returns {Promise<string | void>}
 + * */
 +async function __preFetchSong(videoUrl) {
-+    return await __downloadToLocalFile(videoUrl, "ba/18/91/worst").catch((err) => {
-+        console.warn(`[prefetch] failed prefetching media for ${videoUrl}: ${err.message}`);
++    return __prefetch(videoUrl, "ba/18/91/worst").catch(err => {
++        console.warn(`[prefetch] failed for ${videoUrl}: ${err.message}`);
 +    })
-+}
-+
-+/**
-+ * function to cleanup downladed audio stream
-+ *
-+ * @param {string} videoUrl
-+ * */
-+function __cleanupDownload(videoUrl) {
-+    const filePath = __downloadedFiles.get(videoUrl);
-+    if(!filePath) {
-+        return;
-+    }
-+
-+    try {
-+        __fs.unlinkSync(filePath)
-+
-+        if(String(process.env.DISTUBE_DEBUG).toLowerCase() === "true") {
-+            console.log(`[yt-dlp-downloads] Deleted ${videoUrl} on path ${filePath}`);
-+        }
-+    } catch {}
 +}
 +
 +// PATCH ENDS
@@ -173,7 +255,7 @@ index b17b126..91ab7ea 100644
  var isPlaylist = /* @__PURE__ */ __name((i) => Array.isArray(i.entries), "isPlaylist");
  var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
    static {
-@@ -144,10 +299,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -144,10 +381,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      const info = await json(url, {
        dumpSingleJson: true,
        noWarnings: true,
@@ -187,7 +269,7 @@ index b17b126..91ab7ea 100644
      }).catch((e2) => {
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
-@@ -168,22 +324,33 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -168,22 +406,33 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      return new YtDlpSong(this, info, options);
    }
    async getStreamURL(song) {
@@ -228,7 +310,7 @@ index b17b126..91ab7ea 100644
 +
 +    // return info.url;
 +
-+    return __downloadToLocalFile(song.url, "ba/18/91/worst");
++    return __acquire(song.url, "ba/18/91/worst");
 +
 +    // PATCH ENDS
    }

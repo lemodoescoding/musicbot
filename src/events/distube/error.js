@@ -6,8 +6,8 @@ const { MessageFlags } = require("discord.js");
  * @param {Error} error
  * */
 module.exports = (queue, error) => {
-    console.error(`[${new Date().toISOString()}] [ERROR] ${error}`);
-    console.error(`[${new Date().toISOString()}] [ERROR STACK] ${error.stack}`);
+    console.log(`[${new Date().toISOString()}] [ERROR] ${error.message}`);
+    console.log(`[${new Date().toISOString()}] [ERROR STACK] ${error.stack}`);
 
     queue?.textChannel?.send({
         content: `There was an error, report this to admin.\n❌ ${error.message}`,

@@ -2,6 +2,7 @@ const buildNowPlayingEmbed = require("../../utils/music/buildNowPlayingEmbed");
 const { Queue, Song } = require("distube");
 const { Message } = require("discord.js");
 
+const { preFetchSong } = require("@distube/yt-dlp");
 
 /**
  * @param {Queue & {
@@ -52,11 +53,10 @@ module.exports = async (queue, song) => {
 
     const nextSong = queue.songs[1];
     if(nextSong?.url) {
-        const { preFetchSong } = require("@distube/yt-dlp");
         preFetchSong(nextSong.url).catch((e) => {
             console.error(
 				`[playSong] Prefetch failed for next song "${nextSong.name}":`,
-				error.message,
+				e.message,
 			);
 
         });

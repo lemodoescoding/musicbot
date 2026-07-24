@@ -3,7 +3,7 @@ const { ChatInputCommandInteraction, MessageFlags } = require("discord.js");
 const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 
-const { cleanupDownload } = require("@distube/yt-dlp");
+const { release, cleanupDownload } = require("@distube/yt-dlp");
 
 module.exports = {
 	name: "disconnect",
@@ -32,7 +32,10 @@ module.exports = {
 			}
 
             for(const song of songsToClean) {
-                if(song?.url) { cleanupDownload(song.url) }
+                if(song?.url) { 
+                    release(song.url);
+                    cleanupDownload(song.url)
+                }
             }
 
 			const voiceConnection = client.distube.voices.get(

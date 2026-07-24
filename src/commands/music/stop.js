@@ -5,7 +5,7 @@ const { Queue } = require("distube");
 const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 
-const { cleanupDownload } = require("@distube/yt-dlp");
+const { release, cleanupDownload } = require("@distube/yt-dlp");
 
 module.exports = {
 	name: "stop",
@@ -28,12 +28,13 @@ module.exports = {
 			 * @type {Queue}
 			 * */
 			const queue = getQueue(client, interaction.guildId);
-            const songsToClean = [queue?.songs[0], ...queue?.songs].filter(Boolean)
+            const songsToClean = (queue?.songs ?? []).filter(Boolean)
 
 			queue.stop();
 
             for (const song of songsToClean) {
                 if(song?.url) {
+                    release(song.url);
                     cleanupDownload(song.url)
                 }
             }

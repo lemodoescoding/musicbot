@@ -3,6 +3,8 @@ const formatDuration = require("../../utils/music/formatDuration");
 
 const { Queue, Song } = require("distube");
 
+const { preFetchSong } = require("@distube/yt-dlp");
+
 /**
  * @param {Queue} queue
  * @param {Song} song
@@ -33,11 +35,10 @@ module.exports = async (queue, song) => {
     }
 
     if(queue.songs.length === 2 && queue.songs[1] === song) {
-        const { preFetchSong } = require("@distube/yt-dlp");
         preFetchSong(song.url).catch((e) => {
             console.error(
-				`[playSong] Prefetch failed for next song "${nextSong.name}":`,
-				error.message,
+				`[playSong] Prefetch failed for next song "${song.name}":`,
+				e.message,
 			);
         }); 
     }

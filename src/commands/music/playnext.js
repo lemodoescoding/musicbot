@@ -5,6 +5,8 @@ const { getYtIClient } = require("../../utils/music/getYtIClient");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 const { Queue } = require("distube");
 
+const { preFetchSong } = require("@distube/yt-dlp");
+
 module.exports = {
     name: 'playnext',
     description: 'Enqueues a track from the query and plays it after the current track ends',
@@ -76,6 +78,12 @@ module.exports = {
             if(!wasEmpty && currentQueue.songs.length > 2) {
                 const [added] = currentQueue.songs.splice(currentQueue.songs.length - 1, 1);
                 currentQueue.songs.splice(1, 0, added);
+
+                if(added?.url) {
+                    preFetchSong(added.url).catch(e => {
+                        console.error(`[playnext] Prefetch failed for ${added.name}:`, e.message);
+                    })
+                }
             }
 
             const song = wasEmpty ? currentQueue.songs[0] : currentQueue.songs[1];
