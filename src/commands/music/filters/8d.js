@@ -2,42 +2,46 @@ const makeEmbed = require("../../../utils/embeds/makeEmbed");
 
 const EIGHTD_FILTER_NAME = "custom_8d";
 
-/**
- * @param {import("discord.js").ChatInputCommandInteraction} interaction
- * @param {import("distube").Queue} queue
- * */
-module.exports = async (interaction, queue) => {
-	const requestedHz = interaction.options.getNumber("rotation-speed");
+module.exports = {
+    EIGHTD_FILTER_NAME: EIGHTD_FILTER_NAME,
 
-	const existed = queue.filters.values.find(
-		(f) => f.name === EIGHTD_FILTER_NAME,
-	);
-	if (existed && requestedHz === null) {
-		queue.filters.remove(existed);
+    /**
+     * @param {import("discord.js").ChatInputCommandInteraction} interaction
+     * @param {import("distube").Queue} queue
+     * */
+    callback: async (interaction, queue) => {
+        const requestedHz = interaction.options.getNumber("rotation-speed");
 
-		await interaction.editReply({
-			embeds: [makeEmbed({ description: `🔈 8D effect disabled.` })],
-		});
+        const existed = queue.filters.values.find(
+            (f) => f.name === EIGHTD_FILTER_NAME,
+        );
+        if (existed && requestedHz === null) {
+            queue.filters.remove(existed);
 
-		return;
-	}
+            await interaction.editReply({
+                embeds: [makeEmbed({ description: `🔈 8D effect disabled.` })],
+            });
 
-	const hz = requestedHz ?? 0.125;
-	const filterValue = `apulsator=hz=${hz},aecho=0.8:0.88:60:0.4`;
+            return;
+        }
 
-	queue.filters.add(
-		{
-			name: EIGHTD_FILTER_NAME,
-			value: filterValue,
-		},
-		true,
-	);
+        const hz = requestedHz ?? 0.125;
+        const filterValue = `apulsator=hz=${hz},aecho=0.8:0.88:60:0.4`;
 
-	await interaction.editReply({
-		embeds: [
-			makeEmbed({
-				description: `🔊 8D effect set to active on **${hz}Hz** rotation speed.`,
-			}),
-		],
-	});
+        queue.filters.add(
+            {
+                name: EIGHTD_FILTER_NAME,
+                value: filterValue,
+            },
+            true,
+        );
+
+        await interaction.editReply({
+            embeds: [
+                makeEmbed({
+                    description: `🔊 8D effect set to active on **${hz}Hz** rotation speed.`,
+                }),
+            ],
+        });
+    }
 };

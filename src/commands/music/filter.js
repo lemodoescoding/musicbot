@@ -16,7 +16,8 @@ const subcommands = {
     "8d": require("./filters/8d"),
     "bassboost": require("./filters/bassboost"),
     "speed": require("./filters/speed"),
-    "nightcore": require("./filters/nightcore")
+    "nightcore": require("./filters/nightcore"),
+    "reset": require("./filters/reset")
 };
 
 module.exports = {
@@ -82,6 +83,11 @@ module.exports = {
 				"Enables/disables the nightcore effect on the playback.",
 			type: ApplicationCommandOptionType.Subcommand,
 		},
+        {
+            name: "reset",
+            description: "Reset all filter/effect applied to the playback.",
+            type: ApplicationCommandOptionType.Subcommand
+        }
 	],
 	/**
 	 * @param {import("discord.js").Client & {
@@ -97,9 +103,7 @@ module.exports = {
 
 		const queue = getQueue(client, interaction.guildId);
 		const subCommandName = interaction.options.getSubcommand();
-		const handler = subcommands[subCommandName];
-
-        await interaction.deferReply();
+		const handler = subcommands[subCommandName].callback;
 
 		if (!handler) {
 			await interaction.reply({
@@ -110,8 +114,10 @@ module.exports = {
 			return;
 		}
 
+        await interaction.deferReply();
+
 		try {
-			handler(interaction, queue);
+			await handler(interaction, queue);
 		} catch (error) {
 			await interaction.editReply({
 				content: `There was an error when running command, contact admin.\n\`${error.message}\``,

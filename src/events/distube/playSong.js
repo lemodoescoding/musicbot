@@ -53,12 +53,8 @@ module.exports = async (queue, song) => {
 
     const nextSong = queue.songs[1];
     if(nextSong?.url) {
-        preFetchSong(nextSong.url).catch((e) => {
-            console.error(
-				`[playSong] Prefetch failed for next song "${nextSong.name}":`,
-				e.message,
-			);
-
-        });
+        try {
+            preFetchSong(nextSong.url);
+        } catch {}
     }
 };
