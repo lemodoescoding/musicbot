@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..4f3f485 100644
+index b17b126..6ace382 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -33,7 +33,10 @@ var src_exports = {};
@@ -14,7 +14,7 @@ index b17b126..4f3f485 100644
  });
  module.exports = __toCommonJS(src_exports);
  
-@@ -120,6 +123,240 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
+@@ -120,6 +123,242 @@ var download = /* @__PURE__ */ __name(() => Promise.all([getBinary(YTDLP_URL), i
  
  // src/index.ts
  var import_distube = require("distube");
@@ -58,7 +58,7 @@ index b17b126..4f3f485 100644
 +function __sweepOrphanedDownloads(maxAgeMs = 30 * 60 * 1000) {
 +    let entries;
 +    try {
-+        entries = __fs.readvSync(__DOWNLOAD_DIR);
++        entries = __fs.readdirSync(__DOWNLOAD_DIR);
 +    } catch { return; }
 +
 +    const tracked = new Set(Array.from(__fileState.values()).map(s => s.filePath).filter(Boolean));
@@ -224,6 +224,8 @@ index b17b126..4f3f485 100644
 +                        __fs.unlinkSync(filePath);
 +                    } catch {}
 +
++                    reject(error);
++                    return;
 +                }
 +
 +                state.filePath = filePath;
@@ -247,7 +249,7 @@ index b17b126..4f3f485 100644
 +async function __preFetchSong(videoUrl) {
 +    return __prefetch(videoUrl, "ba/18/91/worst").catch(err => {
 +        console.warn(`[prefetch] failed for ${videoUrl}: ${err.message}`);
-+    })
++    });
 +}
 +
 +// PATCH ENDS
@@ -255,7 +257,7 @@ index b17b126..4f3f485 100644
  var isPlaylist = /* @__PURE__ */ __name((i) => Array.isArray(i.entries), "isPlaylist");
  var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
    static {
-@@ -144,10 +381,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -144,10 +383,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      const info = await json(url, {
        dumpSingleJson: true,
        noWarnings: true,
@@ -269,7 +271,7 @@ index b17b126..4f3f485 100644
      }).catch((e2) => {
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
-@@ -168,22 +406,33 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -168,22 +408,33 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      return new YtDlpSong(this, info, options);
    }
    async getStreamURL(song) {

@@ -6,14 +6,16 @@ const { release, cleanupDownload } = require("@distube/yt-dlp");
  * @param {Song} song
  * */
 module.exports = (queue, song) => {
-    if(queue?.repeatMode !== RepeatMode.DISABLED) {
-        return;
-    }
-
     if(song?.url) {
         release(song.url);
-        cleanupDownload(song.url);
     }
+
+    if(queue?.repeatMode === RepeatMode.DISABLED) {
+        if(song?.url) {
+            cleanupDownload(song.url);
+        }
+    }
+
 
 	if (song?.stream) {
 		song.stream.url = null;
