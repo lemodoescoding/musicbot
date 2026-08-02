@@ -104,4 +104,4 @@ This will depends on what browser you have.
 
 ## License
 
-ISC
+MIT
