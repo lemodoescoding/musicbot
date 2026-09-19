@@ -1,4 +1,4 @@
-const { ApplicationCommandOptionType, Client, ChatInputCommandInteraction } = require("discord.js");
+const { ApplicationCommandOptionType, Client, ChatInputCommandInteraction, MessageFlags } = require("discord.js");
 const { Queue } = require("distube");
 const getQueue = require("../../utils/music/getQueue");
 const getLyrics = require("../../utils/music/getLyrics");
@@ -41,6 +41,12 @@ module.exports = {
             required: false,
         },
     ],
+    /**
+	 * @param {import("discord.js").Client & {
+	 *  distube: import("distube").DisTube
+	 * }} client
+     * @param {ChatInputCommandInteraction} interaction
+     * */
     callback: async (client, interaction) => {
         let query = interaction.options.getString("query");
 
@@ -84,8 +90,10 @@ module.exports = {
             await paginateEmbeds(interaction, pages);
         } catch (error) {
             await interaction.editReply({
-                content: `An Error Occured: ${error.message}`
+                content: `Cant show the lyrics for the query for now.`,
+                flags: [MessageFlags.Ephemeral]
             });
+
             console.log(error);
             console.log(error.stack);
         }

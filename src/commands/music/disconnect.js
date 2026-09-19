@@ -52,7 +52,7 @@ module.exports = {
 			});
 		} catch (error) {
 			await interaction.reply({
-				content: `There was an error when running command /disconnect\n\`${error.message}\``,
+				content: `An error occured when trying to disconnect the bot from the voice channel.`,
 				flags: [MessageFlags.Ephemeral],
 			});
 

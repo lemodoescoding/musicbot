@@ -120,7 +120,7 @@ module.exports = {
 			await handler(interaction, queue);
 		} catch (error) {
 			await interaction.editReply({
-				content: `There was an error when running command, contact admin.\n\`${error.message}\``,
+				content: `There was an error when applying the filter into the playback. Reverting the playback settings for now.`,
 				flags: [MessageFlags.Ephemeral],
 			});
 

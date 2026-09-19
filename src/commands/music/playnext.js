@@ -1,3 +1,5 @@
+import { validateURL } from "@distube/ytdl-core";
+
 const { ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags } = require("discord.js");
 const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
@@ -34,6 +36,15 @@ module.exports = {
 		const query = interaction.options.getString("query", true);
 
 		const urlRegex = /^https?:\/\//i.test(query);
+
+        if(!validateURL(query)) {
+            await interaction.editReply({
+                content: `The Query is not a valid for Youtube Video URL, please paste the right format.`,
+                flags: [MessageFlags.Ephemeral]
+            });
+
+            return;
+        }
 
         await interaction.deferReply();
 

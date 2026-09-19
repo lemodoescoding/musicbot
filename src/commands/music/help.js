@@ -103,7 +103,7 @@ module.exports = {
 			});
 		} catch (error) {
 			await interaction.reply({
-				content: `There was an error when running /help\n\`${error.message}\``,
+				content: `There was an error when running /help`,
 				flags: [MessageFlags.Ephemeral],
 			});
 			console.log(error);

@@ -54,7 +54,13 @@ module.exports = {
 
 		const { voiceChannel } = music;
 
-		const input = interaction.options.getString("input", true);
+		let input = interaction.options.getString("input", true);
+
+        input = input
+                    .trim()
+                    .replace(/[^\w\s-]/g, '')
+                    .replace(/[^a-zA-Z0-9]/g, "")
+                    .replace(/^-+|-+$/g, '')
 
 		await interaction.deferReply();
 
@@ -214,7 +220,8 @@ module.exports = {
 			});
 		} catch (error) {
 			await interaction.editReply({
-				content: `Failed to search.\n\`${error.message}\``,
+				content: `Failed to search for query ${input}. \nPlease try again or modify the query.`,
+                flags: [MessageFlags.Ephemeral]
 			});
 
 			console.log(error);

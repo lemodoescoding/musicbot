@@ -36,7 +36,7 @@ module.exports = {
 
         } catch(error) {
             await interaction.reply({
-                content: `There was an error on running command /resume\n\`${error.message}\``,
+                content: `There was an error on running command /resume and resuming current playback.`,
                 flags: [MessageFlags.Ephemeral]
             });
 

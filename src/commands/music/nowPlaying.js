@@ -36,7 +36,7 @@ module.exports = {
 			});
 		} catch (error) {
 			await interaction.reply({
-				content: `There was error running command /nowplaying\n\`${error.message}\``,
+				content: `There was error running command /nowplaying`,
 				flags: [MessageFlags.Ephemeral],
 			});
 

@@ -4,7 +4,7 @@ const validateVoice = require("../../utils/music/validateVoice");
 
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 
-const {Client, ChatInputCommandInteraction, EmbedBuilder} = require('discord.js');
+const {Client, ChatInputCommandInteraction, EmbedBuilder, MessageFlags} = require('discord.js');
 const { Queue, RepeatMode } = require("distube");
 
 const { release, cleanupDownload } = require("@distube/yt-dlp");
@@ -65,7 +65,8 @@ module.exports = {
             })
         } catch (error) {
             await interaction.reply({
-                content: `An Error Occured: ${error.message}`
+                content: `An Error Occured when skipping current song.`,
+                flags: [MessageFlags.Ephemeral]
             });
 
             console.log(error);

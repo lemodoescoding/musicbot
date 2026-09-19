@@ -82,7 +82,7 @@ module.exports = {
             });
         } catch(error) {
             await interaction.reply({
-                content: `There was an error when running command /seek\n\`${error.message}\``,
+                content: `There was an error when running command /seek and skipping to ${formatDuration(time)}`,
                 flags: [MessageFlags.Ephemeral]
             });
 

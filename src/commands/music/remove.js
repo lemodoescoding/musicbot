@@ -59,7 +59,7 @@ module.exports = {
             });
         } catch (error) {
             await interaction.reply({
-                content: `There was an error when running command /remove. Contact the admin\n\`${error.message}\``,
+                content: `There was an error when running command /remove. Cant remove the designated song for now.`,
                 flags: [MessageFlags.Ephemeral]
             });
 

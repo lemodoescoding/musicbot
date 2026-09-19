@@ -1,6 +1,7 @@
 const {
 	ChatInputCommandInteraction,
 	ApplicationCommandOptionType,
+    MessageFlags,
 } = require("discord.js");
 
 const getQueue = require("../../utils/music/getQueue");
@@ -57,7 +58,8 @@ module.exports = {
 			});
 		} catch (error) {
 			await interaction.reply({
-				content: `An Error Occured: ${error.message}`,
+				content: `An error occured when executing the loop command. Reverting the playback settings for now.`,
+                flags: [MessageFlags.Ephemeral]
 			});
 
 			console.log(error);

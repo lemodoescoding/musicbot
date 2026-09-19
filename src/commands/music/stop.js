@@ -1,4 +1,4 @@
-const { ChatInputCommandInteraction } = require("discord.js");
+const { ChatInputCommandInteraction, MessageFlags } = require("discord.js");
 
 const { Queue } = require("distube");
 
@@ -44,8 +44,12 @@ module.exports = {
 			});
 		} catch (error) {
 			await interaction.reply({
-				content: `There was an error running command /stop\n\`${error.message}\``,
+				content: `There was an error running command /stop, cant stop the playback for now.`,
+                flags: [MessageFlags.Ephemeral]
 			});
+
+            console.log(error)
+            console.log(error.stack)
 		}
 	},
 };

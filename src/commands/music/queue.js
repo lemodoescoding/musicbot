@@ -1,4 +1,4 @@
-const { ApplicationCommandOptionType, Client, ChatInputCommandInteraction } = require("discord.js");
+const { ApplicationCommandOptionType, Client, ChatInputCommandInteraction, MessageFlags } = require("discord.js");
 const { Queue } = require("distube");
 
 const getQueue = require("../../utils/music/getQueue");
@@ -66,7 +66,8 @@ module.exports = {
             }
         } catch (error) {
             await interaction.reply({
-                content: `An Error Occured: ${error.message}`
+                content: `An Error Occured when using the /queue command`,
+                flags: [MessageFlags.Ephemeral]
             });
 
             console.log(error);

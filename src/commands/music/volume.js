@@ -64,7 +64,7 @@ module.exports = {
 			});
 		} catch (error) {
 			await interaction.editReply({
-				content: `There was an error when running /volume command.\n\`${error.message}\``,
+				content: `There was an error when running /volume command. Reverting back volume level for now.`,
 				flags: [MessageFlags.Ephemeral],
 			});
 

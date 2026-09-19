@@ -1,3 +1,5 @@
+import { validateURL } from "@distube/ytdl-core";
+
 const { Queue } = require("distube");
 const { Innertube } = require("youtubei.js");
 
@@ -46,6 +48,15 @@ module.exports = {
 		const urlRegex = /^https?:\/\//i.test(query);
 
 		await interaction.deferReply();
+
+        if(!validateURL(query)) {
+            await interaction.editReply({
+                content: `The Query is not a valid for Youtube Video URL, please paste the right format.`,
+                flags: [MessageFlags.Ephemeral]
+            });
+
+            return;
+        }
 
 		try {
 			let input = query;
@@ -116,7 +127,8 @@ module.exports = {
 
                 if (alreadyQueued) {
                     await interaction.editReply({
-                        content: "❌ That song is already playing."
+                        content: "❌ That song is already playing.",
+                        flags: [MessageFlags.Ephemeral]
                     });
 
                     return;
@@ -144,7 +156,8 @@ module.exports = {
 			await interaction.deleteReply();
 		} catch (error) {
 			await interaction.editReply({
-				content: `Failed to play music.\n\`${error.message}\``,
+				content: `Failed to play music ${input}. \nTry again or modify the input query.`,
+                flags: [MessageFlags.Ephemeral]
 			});
 
             console.log(error);
