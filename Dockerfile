@@ -26,8 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3-pip \
     && pip install --break-system-packages -U bgutil-ytdlp-pot-provider \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp
+RUN mkdir -p /home/app/bin \
+    && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /home/app/bin/yt-dlp \
+    && chmod a+rx /home/app/bin/yt-dlp
 
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
 
@@ -36,8 +37,9 @@ RUN mkdir -p /etc && printf '%s\n%s\n' \
 	'--extractor-args "youtubepot-bgutilhttp:base_url=http://pot-provider:4416"' \
 	> /etc/yt-dlp.conf
 
+ENV PATH="/home/app/bin:${PATH}"
 ENV YTDLP_DISABLE_DOWNLOAD=true
-ENV YTDLP_DIR=/usr/local/bin
+ENV YTDLP_DIR=/home/app/bin
 ENV YTDLP_FILENAME=yt-dlp
 
 COPY --from=builder /app/node_modules ./node_modules
@@ -51,7 +53,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 RUN useradd app
 RUN chown -R app:app /app
 
-RUN chown app:app /usr/local/bin/yt-dlp
+RUN chown app:app /home/app/bin/yt-dlp
 # for ytdlp signature function
 RUN mkdir -p /home/app/.cache && chown -R app:app /home/app
 RUN mkdir -p /app/cookies && chown -R app:app /app/cookies
