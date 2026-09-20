@@ -14,7 +14,12 @@ const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 const { getYtIClient } = require("../../utils/music/getYtIClient");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
-const { MAX_DURATION_SECONDS, readDurationInfo } = require("../../utils/music/checkPlaybackSafe");
+const { check } = require("../../utils/music/cooldown");
+const lock = require("../../utils/music/playbinarylock");
+const {
+	MAX_DURATION_SECONDS,
+	readDurationInfo,
+} = require("../../utils/music/checkPlaybackSafe");
 
 const MAX_LIST_EMBED = 10;
 
@@ -52,15 +57,37 @@ module.exports = {
 			return;
 		}
 
+		const cd = check("search", interaction.user.id, 4000);
+		if (!cd.ok) {
+			await interaction.reply({
+				content: `Please wait ${(cd.remainingMs / 1000).toFixed(1)}s before using /music again.`,
+				flags: [MessageFlags.Ephemeral],
+			});
+
+			return;
+		}
+
+		if (lock.isLocked(interaction.user.id)) {
+			await interaction.reply({
+				content:
+					"⏳ Your last request is still being processed — please wait for it to finish.",
+				flags: [MessageFlags.Ephemeral],
+			});
+
+			return;
+		}
+
+		lock.acquire(interaction.user.id);
+
 		const { voiceChannel } = music;
 
 		let input = interaction.options.getString("input", true);
 
-        input = input
-                    .trim()
-                    .replace(/[^\w\s-]/g, '')
-                    .replace(/[^a-zA-Z0-9]/g, "")
-                    .replace(/^-+|-+$/g, '')
+		input = input
+			.trim()
+			.replace(/[^\w\s-]/g, "")
+			.replace(/[^a-zA-Z0-9]/g, "")
+			.replace(/^-+|-+$/g, "");
 
 		await interaction.deferReply();
 
@@ -70,19 +97,23 @@ module.exports = {
 			 * */
 			const yt = await getYtIClient();
 			const search = await yt.search(input, { type: "video" });
-            let results = search.results.filter((s) => {
-                if(s.title?.text === undefined || s.type !== "Video" || s.id === undefined) {
-                    return false;
-                }
+			let results = search.results.filter((s) => {
+				if (
+					s.title?.text === undefined ||
+					s.type !== "Video" ||
+					s.id === undefined
+				) {
+					return false;
+				}
 
-                const { seconds, isLive } = readDurationInfo(s);
+				const { seconds, isLive } = readDurationInfo(s);
 
-                // if(!seconds || seconds <= 0 || seconds > MAX_DURATION_SECONDS || isLive) {
-                //     return false;
-                // }
+				// if(!seconds || seconds <= 0 || seconds > MAX_DURATION_SECONDS || isLive) {
+				//     return false;
+				// }
 
-                return true;
-            });
+				return true;
+			});
 
 			results = (results || []).slice(0, MAX_LIST_EMBED);
 
@@ -98,10 +129,10 @@ module.exports = {
 				return;
 			}
 
-// console.log(JSON.stringify(results[0], null, 2));
-//
-//             await interaction.deleteReply();
-//             return;
+			// console.log(JSON.stringify(results[0], null, 2));
+			//
+			//             await interaction.deleteReply();
+			//             return;
 
 			const listText = results
 				.map((r, i) => {
@@ -221,11 +252,13 @@ module.exports = {
 		} catch (error) {
 			await interaction.editReply({
 				content: `Failed to search for query ${input}. \nPlease try again or modify the query.`,
-                flags: [MessageFlags.Ephemeral]
+				flags: [MessageFlags.Ephemeral],
 			});
 
 			console.log(error);
 			console.log(error.stack);
+		} finally {
+			lock.release(interaction.user.id);
 		}
 	},
 };

@@ -1,3 +1,5 @@
+import logger from "../../utils/logger/pino-logger";
+
 const { ChatInputCommandInteraction, MessageFlags } = require("discord.js");
 
 const validateVoice = require("../../utils/music/validateVoice");
@@ -50,6 +52,8 @@ module.exports = {
 				content:
 					":white_check_mark: Disconnect the player and left the voice channel.",
 			});
+
+            logger.info(`Bot disconnected from the voice channel ${voiceConnection.channelId}`)
 		} catch (error) {
 			await interaction.reply({
 				content: `An error occured when trying to disconnect the bot from the voice channel.`,

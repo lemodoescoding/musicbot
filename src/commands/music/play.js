@@ -17,6 +17,8 @@ const {
 const { readDurationInfo, extractVideoId, checkPlaybackSafety, MAX_DURATION_SECONDS } = require("../../utils/music/checkPlaybackSafe");
 
 const validateVoice = require("../../utils/music/validateVoice");
+const { check } = require("../../utils/music/cooldown")
+const lock = require("../../utils/music/playbinarylock")
 const { getYtIClient } = require("../../utils/music/getYtIClient")
 
 module.exports = {
@@ -40,6 +42,27 @@ module.exports = {
 		const music = await validateVoice(interaction, false);
 
 		if (!music) return;
+
+        const cd = check("play", interaction.user.id, 4000);
+        if(!cd.ok) {
+            await interaction.reply({
+                content: `Please wait ${(cd.remainingMs / 1000).toFixed(1)}s before using /play again.`,
+                flags: [MessageFlags.Ephemeral]
+            })
+
+            return
+        }
+
+        if(lock.isLocked(interaction.user.id)) {
+            await interaction.reply({
+                content: "Your last request is still being processed, please wait for it to finish.",
+                flags: [MessageFlags.Ephemeral],
+            });
+
+            return;
+        }
+
+        lock.acquire(interaction.user.id)
 
 		const { voiceChannel } = music;
 
@@ -135,10 +158,14 @@ module.exports = {
                 }
             }
 
+            let inDownload = false
+
             if(!currentQueue?.songs) {
                 await interaction.editReply({
                     content: `🔍 Found it — preparing playback, this may take a few seconds while it downloads...`,
                 });
+
+                inDownload = true
             } 
 
             if(currentQueue && currentQueue.songs.length >= 1){
@@ -162,6 +189,8 @@ module.exports = {
 
             console.log(error);
             console.log(error.stack);
-		}
+		} finally {
+            lock.release(interaction.user.id)
+        }
 	},
 };
