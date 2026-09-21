@@ -2,7 +2,7 @@ const fs = require("fs")
 const path = require("path")
 const pino = require("pino")
 
-const LOG_DIR = process.evn.LOG_DIR || path.join(process.cwd(), "logs")
+const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs")
 const LOG_LEVEL = process.env.LOG_LEVEL || "info"
 const LOG_TO_FILE = (process.env.LOG_TO_FILE ?? "true") === "true"
 
