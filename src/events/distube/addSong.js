@@ -4,6 +4,7 @@ const formatDuration = require("../../utils/music/formatDuration");
 const { Queue, Song } = require("distube");
 
 const { preFetchSong } = require("@distube/yt-dlp");
+const logger = require("../../utils/logger/pino-logger")
 
 /**
  * @param {Queue} queue
@@ -32,6 +33,8 @@ module.exports = async (queue, song) => {
 			`[addSong] Failed to send add-song message in guild ${queue.id}, channel ${queue.textChannel?.id}:`,
 			error.message,
 		);
+
+        logger.error({ err }, "")
     }
 
     if(queue.songs.length === 2 && queue.songs[1] === song) {

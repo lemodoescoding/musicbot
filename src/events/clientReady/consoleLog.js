@@ -1,3 +1,6 @@
+import logger from '../../utils/logger/pino-logger';
+const logger = require("../../utils/logger/pino-logger")
+
 const { ActivityType, Client } = require('discord.js')
 
 /**
@@ -10,5 +13,6 @@ module.exports = (client) => {
         url: 'https://www.youtube.com/watch?v=X4VbdwhkE10'
     })
 
-    console.log(`[DISCORD BOT] ${client.user.tag} status is ready.`);
+    logger.info(`[DISCORD BOT] ${client.user.tag} status is ready.`)
+    // console.log(`[DISCORD BOT] ${client.user.tag} status is ready.`);
 }

@@ -13,6 +13,7 @@ const {
 const getLocalCommands = require("../../utils/getLocalCommands");
 const getApplicationCommands = require("../../utils/getApplicationCommands");
 const areCommandsDifferent = require("../../utils/areCommandsDifferent");
+const logger = require("../../utils/logger/pino-logger")
 
 /**
  * @param {Client} client
@@ -53,7 +54,8 @@ module.exports = async (client) => {
 				if (localCommand.deleted) {
 					await applicationCommands.delete(existingCommand.id);
 
-					console.log(`[DISCORD BOT] deleted command "${name}"`);
+                    logger.info(`[DISCORD BOT] deleted command "${name}"`)
+					// console.log(`[DISCORD BOT] deleted command "${name}"`);
 
 					continue;
 				}
@@ -71,13 +73,16 @@ module.exports = async (client) => {
 						});
 					}
 
-					console.log(`[DISCORD BOT] Edited command "${name}".`);
+                    logger.info(`[DISCORD BOT] Edited command "${name}".`)
+					// console.log(`[DISCORD BOT] Edited command "${name}".`);
 				}
 			} else {
 				if (localCommand.deleted) {
 					console.log(
 						`[DISCORD BOT] Skipping registering command "${name}" as it's set to delete.`,
 					);
+
+                    logger.info(`[DISCORD BOT] Skipping registering command "${name}" as it's set to delete.`)
 
 					continue;
 				}
@@ -91,11 +96,13 @@ module.exports = async (client) => {
 
 				await applicationCommands.create(commandData);
 
-				console.log(`[DISCORD BOT] Registered command "${name}".`);
+                logger.info(`[DISCORD BOT] Registered command "${name}".`)
+				// console.log(`[DISCORD BOT] Registered command "${name}".`);
 			}
 		}
 
 	} catch (error) {
-		console.log(`There was an error: ${error}`);
+        logger.error({ err }, "There was an error when registering command")
+		// console.log(`There was an error: ${error}`);
 	}
 };
