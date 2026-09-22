@@ -1,11 +1,12 @@
-import { validateURL } from "@distube/ytdl-core";
-
 const { ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags } = require("discord.js");
 const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
 const { getYtIClient } = require("../../utils/music/getYtIClient");
 const makeEmbed = require("../../utils/embeds/makeEmbed");
 const { Queue } = require("distube");
+
+const { validateURL } = require("@distube/ytdl-core")
+
 
 const { preFetchSong } = require("@distube/yt-dlp");
 

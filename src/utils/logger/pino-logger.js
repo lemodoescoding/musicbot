@@ -26,7 +26,7 @@ function currentLogFile() {
 
 const PINO_TARGETS = [
     {
-        target: "pino-pretty",
+        target: require.resolve("pino-pretty"),
         level: LOG_LEVEL,
         options: {
             colorize: true,
@@ -44,9 +44,9 @@ if (LOG_TO_FILE) {
     })
 }
 
-const transport = pino.transport({ PINO_TARGETS })
+const transport = pino.transport({ targets: PINO_TARGETS })
 
-const logger = pino(
+const baseLogger = pino(
     {
         level: LOG_LEVEL,
         base: undefined,
@@ -56,11 +56,18 @@ const logger = pino(
 )
 
 /**
+ * @param {Record<string, unknown>} context
  * @returns {pino.Logger}
  * */
 function withContext(context) {
-    return logger.child(context)
+    return baseLogger.child(context)
 }
 
+/**
+ * @typedef {pino.Logger & { withContext: typeof withContext }} AppLogger
+ */
+
+/** @type {AppLogger} */
+
+const logger = Object.assign(baseLogger, { withContext })
 module.exports = logger
-module.exports.withContext = withContext

@@ -1,9 +1,8 @@
-import logger from "../../utils/logger/pino-logger";
-
 const { ChatInputCommandInteraction, MessageFlags } = require("discord.js");
 
 const validateVoice = require("../../utils/music/validateVoice");
 const getQueue = require("../../utils/music/getQueue");
+const logger = require("../../utils/logger/pino-logger")
 
 const { release, cleanupDownload } = require("@distube/yt-dlp");
 

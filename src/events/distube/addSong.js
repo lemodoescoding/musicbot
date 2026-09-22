@@ -13,6 +13,8 @@ const logger = require("../../utils/logger/pino-logger")
 module.exports = async (queue, song) => {
     const position = queue.songs.findIndex(s => s === song);
 
+    const log = logger.withContext({ module: "addSong", guildId: queue.id} )
+
     if(position <= 0) { return; }
 
     const embed = makeEmbed({
@@ -29,20 +31,21 @@ module.exports = async (queue, song) => {
             embeds: [embed]
         });
     } catch {
-        console.error(
-			`[addSong] Failed to send add-song message in guild ${queue.id}, channel ${queue.textChannel?.id}:`,
-			error.message,
-		);
+  //       console.error(
+		// 	`[addSong] Failed to send add-song message in guild ${queue.id}, channel ${queue.textChannel?.id}:`,
+		// 	error.message,
+		// );
 
-        logger.error({ err }, "")
+        logger.error({ err: error, channelId:  queue.textChannel?.id }, "Failed to send add-song message")
     }
 
     if(queue.songs.length === 2 && queue.songs[1] === song) {
         preFetchSong(song.url).catch((e) => {
-            console.error(
-				`[playSong] Prefetch failed for next song "${song.name}":`,
-				e.message,
-			);
+            logger.error({ err: e, songName: song.name }, "Prefetch failed for next song.")
+   //          console.error(
+			// 	`[playSong] Prefetch failed for next song "${song.name}":`,
+			// 	e.message,
+			// );
         }); 
     }
 }

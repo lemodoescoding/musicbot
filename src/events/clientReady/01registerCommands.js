@@ -102,7 +102,7 @@ module.exports = async (client) => {
 		}
 
 	} catch (error) {
-        logger.error({ err }, "There was an error when registering command")
+        logger.error({ err: error }, "There was an error when registering command")
 		// console.log(`There was an error: ${error}`);
 	}
 };

@@ -1,5 +1,3 @@
-import { validateURL } from "@distube/ytdl-core";
-
 const { Queue } = require("distube");
 const { Innertube } = require("youtubei.js");
 
@@ -15,6 +13,7 @@ const {
 } = require("discord.js");
 
 const { readDurationInfo, extractVideoId, checkPlaybackSafety, MAX_DURATION_SECONDS } = require("../../utils/music/checkPlaybackSafe");
+const { validateURL } = require("@distube/ytdl-core")
 
 const validateVoice = require("../../utils/music/validateVoice");
 const { check } = require("../../utils/music/cooldown")
@@ -81,8 +80,8 @@ module.exports = {
             return;
         }
 
+		let input = query;
 		try {
-			let input = query;
             let knownDurationSec;
             let knownIsLive;
 

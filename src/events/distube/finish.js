@@ -1,4 +1,5 @@
 const { Queue } = require("distube");
+const logger = require("../../utils/logger/pino-logger")
 
 /**
  * @param {Queue & {
@@ -10,5 +11,6 @@ if (queue._npMessage?.deletable) {
         await queue._npMessage.delete().catch(() => {});
     }
 
-    queue.textChannel?.send("✅ Queue finished.");
+    logger.info({ module: "finish", guildId: queue?.id }, "Queue finished")
+    // queue.textChannel?.send("✅ Queue finished.");
 }

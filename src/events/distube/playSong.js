@@ -3,6 +3,7 @@ const { Queue, Song } = require("distube");
 const { Message } = require("discord.js");
 
 const { preFetchSong } = require("@distube/yt-dlp");
+const logger = require("../../utils/logger/pino-logger")
 
 /**
  * @param {Queue & {
@@ -12,12 +13,14 @@ const { preFetchSong } = require("@distube/yt-dlp");
  * */
 module.exports = async (queue, song) => {
 	const embed = buildNowPlayingEmbed(song, queue);
+    const log = logger.withContext({ module: "playSong", guildId: queue.id })
 
-	console.log("[playSong] queue.id:", queue.id);
-	console.log(
-		"[playSong] existing _npMessage:",
-		queue._npMessage?.id ?? "none",
-	);
+	// console.log("[playSong] queue.id:", queue.id);
+	// console.log(
+	// 	"[playSong] existing _npMessage:",
+	// 	queue._npMessage?.id ?? "none",
+	// );
+    log.debug("existing _npMessage: %s", queue._npMessage?.id ?? "none");``
 
 	if (queue._npMessage?.deletable) {
 		try {
@@ -37,9 +40,13 @@ module.exports = async (queue, song) => {
             embeds: [embed],
         });
     } catch (error){
-        console.error(
-			`[playSong] Failed to send now-playing message in guild ${queue.id}, channel ${queue.textChannel?.id}:`,
-			error.message,
+  //       console.error(
+		// 	`[playSong] Failed to send now-playing message in guild ${queue.id}, channel ${queue.textChannel?.id}:`,
+		// 	error.message,
+		// );
+        log.error(
+			{ err: error, channelId: queue.textChannel?.id },
+			"Failed to send now-playing message"
 		);
     }
 
@@ -49,7 +56,8 @@ module.exports = async (queue, song) => {
 	 * }}
 	 * */
 	queue._npMessage = sent;
-	console.log("[playSong] sent new message, id:", sent?.id);
+	// console.log("[playSong] sent new message, id:", sent?.id);
+    log.debug("sent new now-playing message, id: %s", sent?.id ?? "none");
 
     const nextSong = queue.songs[1];
     if(nextSong?.url) {
